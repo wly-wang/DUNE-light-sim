@@ -7,8 +7,6 @@
 #include <vector>
 #include <string>
 
-#define CHANNEL_NUMBER=160
-
 // Author: Jiaoyang Li (jiaoyang.li@ed.ac.uk)
 
 // reads grid output and creates slimmed file for semi-analytic parameterisation generation
