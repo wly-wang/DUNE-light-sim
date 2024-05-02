@@ -1,6 +1,5 @@
 SEARCH_STRING="Optical Channels positions:  "
 INPUT_FILE=../generate/process0/log
-INPUT_FILE=../../runWithWiresv6/run1/process0/log
 OUTPUT_FILE=protodune_optical_mapping.txt
 
 MAP_HEADER=`grep "${SEARCH_STRING}" ${INPUT_FILE}`
