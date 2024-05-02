@@ -13,7 +13,7 @@ RM           = rm -f
 AR           = ar cru
 
 ##Flags
-CXXFLAGS     = -O3 -fPIC -funroll-loops -DHELLO_BEN# -Wall
+CXXFLAGS     = -O3 -fPIC -funroll-loops -DCHANNEL_NUMBER=RunSetupScriptFirst# -Wall
 
 EXENAME		= FastOpticalMerge
 SRCEXT   	= cpp
