@@ -1,3 +1,5 @@
+Step 0: initialise software environment
+
 Step 1: generate samples
 
 Step 2: merge samples
