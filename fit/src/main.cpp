@@ -369,7 +369,7 @@ int main(int argc, char * argv[]) {
       if (k == 6 && j == 3) pars_ini[3] = -300;
       */
 
-      // argon lateral  //BEN BEN BEN removed
+      // argon lateral
       if (j < 1) pars_ini[3] = -275;
       else if (j < 2) pars_ini[3] = -250;
       else if (j < 4) pars_ini[3] = -200;
