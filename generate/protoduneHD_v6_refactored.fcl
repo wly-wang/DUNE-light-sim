@@ -23,7 +23,7 @@ services:
   TimeTracker:       {}
   RandomNumberGenerator: {} #ART native random number generator
   message:       @local::standard_info
-  @table::protodunehd_refactored_simulation_services
+  @table::dunefd_refactored_simulation_services
 }
 #services.NuRandomService.masterSeed: 1234 # for testing
 
@@ -190,8 +190,8 @@ services.LArPropertiesService.ReflectiveSurfaceDiffuseFractions: [
 
 
 # Set the geometry version
-services.Geometry.GDML: "protodunehd_v6_refactored.gdml"
-services.Geometry.ROOT: "protodunehd_v6_refactored.gdml"
-#services.Geometry.SortingParameters.DetectorVersion: "protodunehd_v6_refactored"
-services.Geometry.Name: "protodunehd_v6_refactored"
-services.LArG4Detector.gdmlFileName_: "protodunehd_v6_refactored.gdml"
+services.Geometry.GDML: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol.gdml"
+services.Geometry.ROOT: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol.gdml"
+#services.Geometry.SortingParameters.DetectorVersion: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol"
+services.Geometry.Name: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol"
+services.LArG4Detector.gdmlFileName_: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol.gdml"
