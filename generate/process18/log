@@ -1,0 +1,92 @@
+The following paths have not been enabled for execution and will be ignored:
+  stream1
+The following module label is either not assigned to any path,
+or it has been assigned to ignored path(s):
+  out1
+%MSG-i MF_INIT_OK:  Early 14-Feb-2025 07:37:31 GMT JobSetup
+Messagelogger initialization complete.
+%MSG
+Info in <TGeoManager::Import>: Reading geometry from file: /scratch/wwang/dune_light_sim_v10_03_01d02/localProducts_larsoft_v10_03_01d02_e26_prof/dunecore/v10_03_01d02/gdml/dune10kt_v6_refactored.gdml
+Info in <TGeoManager::TGeoManager>: Geometry GDMLImport, Geometry imported from GDML created
+Error: Unsupported GDML Tag Used :gdml_simple_extension. Please Check Geometry/Schema.
+Error: Unsupported GDML Tag Used :extension. Please Check Geometry/Schema.
+Info in <TGeoManager::SetTopVolume>: Top volume is volWorld. Master volume is volWorld
+Info in <TGeoNavigator::BuildCache>: --- Maximum geometry depth set to 100
+Info in <TGeoManager::CheckGeometry>: Fixing runtime shapes...
+Info in <TGeoManager::CheckGeometry>: ...Nothing to fix
+Info in <TGeoManager::CloseGeometry>: Counting nodes...
+Info in <TGeoManager::Voxelize>: Voxelizing...
+Info in <TGeoManager::CloseGeometry>: Building cache...
+Info in <TGeoManager::CountLevels>: max level = 5, max placements = 9704
+Info in <TGeoManager::CloseGeometry>: 844009 nodes/ 12339 volume UID's in Geometry imported from GDML
+Info in <TGeoManager::CloseGeometry>: ----------------modeler ready----------------
+%MSG-i AuxDetGeometryCore:  Early 14-Feb-2025 07:37:37 GMT JobSetup
+New detector geometry loaded from
+	/scratch/wwang/dune_light_sim_v10_03_01d02/localProducts_larsoft_v10_03_01d02_e26_prof/dunecore/v10_03_01d02/gdml/dune10kt_v6_refactored.gdml
+%MSG
+%MSG-i GeometryCore:  Early 14-Feb-2025 07:37:38 GMT JobSetup
+Sorting volumes...
+%MSG
+%MSG-i GeometryCore:  Early 14-Feb-2025 07:37:38 GMT JobSetup
+New detector geometry loaded from
+	/scratch/wwang/dune_light_sim_v10_03_01d02/localProducts_larsoft_v10_03_01d02_e26_prof/dunecore/v10_03_01d02/gdml/dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol.gdml
+%MSG
+%MSG-i DuneApaWireReadoutGeom:  Early 14-Feb-2025 07:37:38 GMT JobSetup
+Initializing wire readout...
+%MSG
+Cryostat 0:
+  384000 total channels
+  150 APAs
+  For all identical APA:
+    Number of channels per APA = 2560
+    U channels per APA = 800
+    V channels per APA = 800
+    Z channels per APA = 960
+    Pitch in U Plane = 0.4667
+    Pitch in V Plane = 0.4667
+    Pitch in Z Plane = 0.479
+%MSG-i SimpleChannelStatusService:  Early 14-Feb-2025 07:37:38 GMT JobSetup
+Loaded from configuration:
+  - 0 bad channels
+  - 0 noisy channels
+  - largest channel ID: 383999, largest present: 383999
+%MSG
+%MSG-i setupProvider<DetectorPropertiesStandard>:  Early  14-Feb-2025 07:37:39 GMT JobSetup
+Asked to ignore 1 keys: 'InheritNumberTimeSamples'
+%MSG
+%MSG-i LArG4DetectorService::Ctr:  Early 14-Feb-2025 07:37:39 GMT JobSetup
+Reading stepLimit(s) from the configuration file, for volume(s):
+%MSG
+%MSG-i LArG4DetectorService::Ctr:  Early 14-Feb-2025 07:37:39 GMT JobSetup
+Volume: volTPCActiveInner0, stepLimit: 0.4
+%MSG
+%MSG-i LArG4DetectorService::Ctr:  Early 14-Feb-2025 07:37:39 GMT JobSetup
+Volume: volTPCActiveInner1, stepLimit: 0.4
+%MSG
+%MSG-i LArG4DetectorService::Ctr:  Early 14-Feb-2025 07:37:39 GMT JobSetup
+Volume: volTPCActiveOuter, stepLimit: 0.4
+%MSG
+registering to  primaryGeneratorActionsMap_
+registering to   eventActionsMap_
+registering to   trackingActionsMap_
+registering to  steppingActionsMap_
+%MSG-i ParticleListActionService:  Early 14-Feb-2025 07:37:39 GMT JobSetup
+The full tracking information will not be stored for particles resulting from the following processes: 
+{ "conv" "LowEnConversion" "Pair" "compt" "Compt" "Brem" "phot" "Photo" "Ion" "annihil" }
+
+%MSG
+%MSG-i ParticleListActionService:  Early 14-Feb-2025 07:37:39 GMT JobSetup
+Trajectory sparsification enabled with SparsifyMargin : 0.015
+
+%MSG
+%MSG-s ArtException:  Early 14-Feb-2025 07:37:40 GMT JobSetup
+cet::exception caught in art
+---- OtherArt BEGIN
+  ServiceCreation
+  ---- Can't find key BEGIN
+    DoNotLoadLibrary 
+  ---- Can't find key END
+  cet::exception caught during construction of service type phot::PhotonVisibilityService
+---- OtherArt END
+%MSG
+Art has completed and will exit with status 1.
