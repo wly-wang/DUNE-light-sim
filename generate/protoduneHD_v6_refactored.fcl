@@ -23,10 +23,18 @@ services:
   TimeTracker:       {}
   RandomNumberGenerator: {} #ART native random number generator
   message:       @local::standard_info
-  @table::dunefd_refactored_simulation_services
+  @table::dunefd_photolibbuild_services
 }
 #services.NuRandomService.masterSeed: 1234 # for testing
 
+# Set the geometry version
+services.Geometry.GDML: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol.gdml"
+services.Geometry.ROOT: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol.gdml"
+#services.Geometry.SortingParameters.DetectorVersion: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol"
+services.Geometry.Name: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol"
+services.LArG4Detector.gdmlFileName_: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol.gdml"
+services.AuxDetGeometry.GDML: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol.gdml"
+services.AuxDetGeometry.Name: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol"
 
 # services changes.
 services.NuRandomService.policy: "random"
@@ -185,13 +193,3 @@ services.LArPropertiesService.ReflectiveSurfaceDiffuseFractions: [
 # changing the absorption length for xenon to be 80m.
 # services.LArPropertiesService.AbsLengthEnergies: [4,5,6,6.5,7,7.5,8,9,10,11]
 # services.LArPropertiesService.AbsLengthSpectrum: [2000,2000,2000,8000,8000,8000,2000,2000,2000,2000]
-
-### extra settings from here ###
-
-
-# Set the geometry version
-services.Geometry.GDML: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol.gdml"
-services.Geometry.ROOT: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol.gdml"
-#services.Geometry.SortingParameters.DetectorVersion: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol"
-services.Geometry.Name: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol"
-services.LArG4Detector.gdmlFileName_: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol.gdml"
