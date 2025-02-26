@@ -44,7 +44,7 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
   // 8" PMT radius
   double b = 8*2.54/2.;
   // Y-Z coordinates of the active volume center
-  const double centerYZ[2] = {305.534, 231.266};
+  const double centerYZ[2] = {0, 697.17};
   //const double centerXZ[2] = {0., 1000.};
   //double x_anode = 324.97;//325.01;
   //double y_anode = 0;
