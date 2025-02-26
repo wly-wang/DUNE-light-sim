@@ -290,21 +290,25 @@ int main(int argc, char * argv[]) {
 
   //Distance range and step for the profile to fit with GH
   double d_min = 0;
-  double d_max = 700.; // changable 1400 - argon; 2000 -xenon
+  double d_max = 1000.; // changable 1400 - argon; 2000 -xenon
   double step_d = 50;
 
   bool isDouble=true;
   //Center distance bins
-  double range_d = 400;//1100; 300;
+  double range_d = 800; //400;
 
   // Modification requried from Users:
-  const int M = 6;
+  const int M = 4;
   double range_d_array[M+1];
   if (!isDouble) {
-    double range_d_array_temp[M+1] = {0.,100.,150.,200.,250.,300.,range_d};
+    //double range_d_array_temp[M+1] = {0.,100.,150.,200.,250.,300.,range_d};
+    //double range_d_array_temp[M+1] = {0.,100.,400.,600.,800.,950.,range_d};
+    double range_d_array_temp[M+1] = {200.,350.,500.,600.,range_d};
     std::copy(std::begin(range_d_array_temp), std::end(range_d_array_temp), std::begin(range_d_array));
   }else {
-    double range_d_array_temp[M+1] = {0.,100.,150.,200.,250.,280.,range_d};
+    //double range_d_array_temp[M+1] = {0.,100.,150.,200.,250.,280.,range_d};
+    double range_d_array_temp[M+1] = {200.,350.,500.,600.,range_d};
+    //double range_d_array_temp[M+1] = {0.,100.,400.,600.,800.,950.,range_d};
     std::copy(std::begin(range_d_array_temp), std::end(range_d_array_temp), std::begin(range_d_array));
   }
   // End.
@@ -567,7 +571,7 @@ int main(int argc, char * argv[]) {
         leg1->AddEntry(gr[j][k],label[j],"p");
       }
     }
-   //if(l==0)  leg1->Draw();
+   if(l==0)  leg1->Draw();
   }
 
   canvas1->Update();
