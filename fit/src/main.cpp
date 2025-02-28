@@ -295,20 +295,21 @@ int main(int argc, char * argv[]) {
 
   bool isDouble=true;
   //Center distance bins
-  double range_d = 800; //400;
+  double range_d = 900; //400;
 
   // Modification requried from Users:
-  const int M = 4;
+  const int M = 5;
   double range_d_array[M+1];
   if (!isDouble) {
     //double range_d_array_temp[M+1] = {0.,100.,150.,200.,250.,300.,range_d};
-    //double range_d_array_temp[M+1] = {0.,100.,400.,600.,800.,950.,range_d};
-    double range_d_array_temp[M+1] = {200.,350.,500.,600.,range_d};
+    double range_d_array_temp[M+1] = {0.,200.,350.,500.,650.,range_d};
+    //double range_d_array_temp[M+1] = {200.,350.,500.,600.,range_d};
     std::copy(std::begin(range_d_array_temp), std::end(range_d_array_temp), std::begin(range_d_array));
   }else {
     //double range_d_array_temp[M+1] = {0.,100.,150.,200.,250.,280.,range_d};
-    double range_d_array_temp[M+1] = {200.,350.,500.,600.,range_d};
-    //double range_d_array_temp[M+1] = {0.,100.,400.,600.,800.,950.,range_d};
+    double range_d_array_temp[M+1] = {0.,200.,350.,500.,650.,range_d};
+    //double range_d_array_temp[M+1] = {200.,350.,500.,600.,range_d};
+    
     std::copy(std::begin(range_d_array_temp), std::end(range_d_array_temp), std::begin(range_d_array));
   }
   // End.
