@@ -470,7 +470,7 @@ int main(int argc, char * argv[]){
       double nPhotons_solid = VUVHits(genPhotons,ScintPoint,OpDetPoint,OpDetType);
       double distance_vuv = sqrt(pow(ScintPoint[0] - OpDetPoint[0],2) + pow(ScintPoint[1] - OpDetPoint[1],2) + pow(ScintPoint[2] - OpDetPoint[2],2));
 
-      if (VUV_hits[pmt_index] < 1000) continue;
+      if (VUV_hits[pmt_index] < 50) continue;
 
       total_pe_truth += VUV_hits[nPMT];
       total_pe_prediction += nPhotons_solid;
@@ -501,7 +501,7 @@ int main(int argc, char * argv[]){
     v_prop_dist.push_back(distance_vuv);
     //v_prop_dist.push_back(325.01 - ScintPoint[0]);
     } // end loop through optical channels
-    std::cout<<total_pe_prediction<< "  " << total_pe_truth <<std::endl;
+    
     h_truePE_vs_predPE->Fill(total_pe_truth, total_pe_prediction);
   } // end of loop over points
 

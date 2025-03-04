@@ -37,7 +37,7 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
        bool IsSphere, std::vector<double> &v6, std::vector<double> &v7) {
   std::cout<<"calcula function ..."<<std::endl;
 
-  double min_number_entries = 1000;
+  double min_number_entries = 50;
   // width and height in cm of single arapuca active window
   double arapuca_w = 10;
   double arapuca_h = 47.75;
@@ -129,23 +129,23 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
     //loop over the channels
     for(int i=0; i<numberDevices; i++) {
 
-      // Modification requried from Users:
-      bool isDouble=false;
-      if (devx.at(i) > 350.){
-        if (devz.at(i) < 231.){
-          if ( (devy.at(i) < 35.) || ((devy.at(i) > 210.) && (devy.at(i) < 340.)) || ((devy.at(i) > 450.) && (devy.at(i) < 510.)) || (devy.at(i) > 570.) ){
-            isDouble = true;
-          }
-        }
-        if(devz.at(i) > 231.){
-          if ( ((devy.at(i) > 90.) && (devy.at(i) < 150.)) || ((devy.at(i) > 210.) && (devy.at(i) < 280.)) || ((devy.at(i) > 390.) && (devy.at(i) < 450.)) || ((devy.at(i) > 510.) && (devy.at(i) < 580.)) ) {
-            isDouble = true;
-          }
-        }
-      }
+      // // Modification requried from Users:
+      // bool isDouble=false;
+      // if (devx.at(i) > 350.){
+      //   if (devz.at(i) < 231.){
+      //     if ( (devy.at(i) < 35.) || ((devy.at(i) > 210.) && (devy.at(i) < 340.)) || ((devy.at(i) > 450.) && (devy.at(i) < 510.)) || (devy.at(i) > 570.) ){
+      //       isDouble = true;
+      //     }
+      //   }
+      //   if(devz.at(i) > 231.){
+      //     if ( ((devy.at(i) > 90.) && (devy.at(i) < 150.)) || ((devy.at(i) > 210.) && (devy.at(i) < 280.)) || ((devy.at(i) > 390.) && (devy.at(i) < 450.)) || ((devy.at(i) > 510.) && (devy.at(i) < 580.)) ) {
+      //       isDouble = true;
+      //     }
+      //   }
+      // }
       // Reminder: continue: skip the rest of the code when meeting the if-condition.
       //if (devx.at(i) > 0.) continue; // for single sided GH curves, only select the one TPC
-      if (!isDouble) continue;    // remove double-sided supercells.
+      // if (!isDouble) continue;    // remove double-sided supercells.
 
       int entries = VUV_hits[i];
       if(entries < min_number_entries) continue;
@@ -153,6 +153,10 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
       double distance_to_pmt = sqrt(pow(posSource[0] - devx.at(i),2) +
                                     pow(posSource[1] - devy.at(i),2) +
                                     pow(posSource[2] - devz.at(i),2));
+      
+      // if (distance_to_pmt>500){
+      //   std::cout<<distance_to_pmt<<std::endl;
+      // }
 
       // calculate theta
       double theta = -1;
@@ -230,6 +234,7 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
       v_x.push_back(posSource[0]);
       v_devx.push_back(devx.at(i));
       v_hits.push_back(entries);
+      
       v_distance.push_back(distance_to_pmt);
       v_rec_hits.push_back(rec_N);
       v_offset_angle.push_back(theta);
@@ -290,7 +295,7 @@ int main(int argc, char * argv[]) {
 
   //Distance range and step for the profile to fit with GH
   double d_min = 0;
-  double d_max = 1000.; // changable 1400 - argon; 2000 -xenon
+  double d_max = 800.; // changable 1400 - argon; 2000 -xenon
   double step_d = 50;
 
   bool isDouble=true;
@@ -515,9 +520,11 @@ int main(int argc, char * argv[]) {
   double y_0[2] = {0, 2.};
   TGraph* gg0[dim];
   std::vector<double> p1[dim], p2[dim], p3[dim], p4[dim], ep1[dim], ep2[dim], ep3[dim];
-  TLegend *leg1=new TLegend(0.55, 0.4, 0.89, 0.89,NULL,"brNDC");
+  TLegend *leg1 = new TLegend(0.53, 0.5, 0.95, 0.9, NULL, "brNDC");
   leg1->SetHeader("");
-  leg1->SetBorderSize(0);
+  leg1->SetFillStyle(0);  // Make the background transparent
+  leg1->SetBorderSize(0); // Remove the legend border
+
   char label[N][20];
 
   for(int l=0; l < dim; l++){
@@ -530,7 +537,7 @@ int main(int argc, char * argv[]) {
     gg0[l]->GetXaxis()->SetTitleSize(0.05);
     gg0[l]->GetXaxis()->SetTitleOffset(1.);
     gg0[l]->GetXaxis()->SetRangeUser(0,d_max);
-    gg0[l]->GetYaxis()->SetRangeUser(0, 1.5); // changable.
+    gg0[l]->GetYaxis()->SetRangeUser(0, 1.6); // changable.
     gg0[l]->GetXaxis()->SetTitle("distance [cm]");
     gg0[l]->GetYaxis()->SetTitle("N_{hit} / N_{#Omega} / cos(#theta)");
     gg0[l]->Draw("ap");
@@ -892,7 +899,7 @@ int main(int argc, char * argv[]) {
   gf[2]->GetYaxis()->SetLabelSize(0.05);
   gf[2]->GetYaxis()->SetTitleSize(0.06);
   gf[2]->GetYaxis()->SetTitleOffset(0.74);
-  gf[2]->GetYaxis()->SetRangeUser(0,300);  // need to rewrite this
+  gf[2]->GetYaxis()->SetRangeUser(0,500);  // need to rewrite this
   gf[2]->GetXaxis()->SetRangeUser(0,range_d*1.05); // need to rewrite this to sset the range of border effect.
   gf[2]->GetXaxis()->SetLabelSize(0.05);
   gf[2]->GetXaxis()->SetTitleSize(0.05);
