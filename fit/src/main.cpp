@@ -128,6 +128,7 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
 
     //loop over the channels
     for(int i=0; i<numberDevices; i++) {
+      // if (i<479) continue;
 
       // // Modification requried from Users:
       // bool isDouble=false;
@@ -229,11 +230,11 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
 
       //pure geometric estimation of the number of arriving VUV photons
       double rec_N =  exp(-1.*distance_to_pmt/L_abs)*gRandom->Poisson(num_phot_generated*geo_factor/(4*3.1416));
-
+      
       //if (entries > 1000) std::cout << "OpDet: " << i << ", distance: " << distance_to_pmt << ", theta: " << theta << ", G4: " << entries << ", S-A: " << rec_N << ", geo = " << geo_factor << std::endl;
+      v_hits.push_back(entries);
       v_x.push_back(posSource[0]);
       v_devx.push_back(devx.at(i));
-      v_hits.push_back(entries);
       
       v_distance.push_back(distance_to_pmt);
       v_rec_hits.push_back(rec_N);

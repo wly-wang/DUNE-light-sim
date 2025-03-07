@@ -87,7 +87,7 @@ const double plane_depth = 0; // cm
 const double y_dimension_foils = 400; // cm
 const double z_dimension_foils = 500; // cm
 // centre coordinates of foils
-const double x_foils = 0; const double y_foils = 305.534; const double z_foils = 231.266; // cm
+const double x_foils = 360.279; const double y_foils = 0; const double z_foils = 679.572; // cm
 
 // LAr properties
 const double L_abs = 2000;
@@ -100,32 +100,31 @@ const double pi = 3.1416;
   // USERS: update here with the print out from the fit!
   // Argon, RS = 99.9cm, flat PDs (Arapucas/Supercells)
   const std::vector<double> angulo = {5, 15, 25, 35, 45, 55, 65, 75, 85};
-  // protoDUNEhd single-sided.
-  const double fGHVUVPars[4][9] = { {0.935032, 0.910678, 0.891631, 0.831471, 0.738872, 0.646347, 0.548337, 0.421256, 0.311587},
-                                    {133.584, 133.993, 140.251, 146.678, 162.467, 177.315, 185.046, 185.829, 162.883},
-                                    {258.6, 291.263, 267.608, 268.856, 317.191, 326.81, 287.43, 349.998, 349.971},
+  // for DUNE FD1 HD 1x2x6 modded geometry (CPA side PDs)
+  const double fGHVUVPars[4][9] = { {0.96311, 0.941925, 0.901074, 0.827969, 0.74171, 0.639441, 0.529001, 0.401473, 0.3031},
+                                    {146.011, 149.516, 148.276, 148.898, 158.811, 171.994, 177.966, 171.344, 129.448},
+                                    {190.428, 193.476, 226.5, 259.491, 293.266, 329.594, 353.936, 368.606, 363.766},
                                     {-275, -250, -200, -200, -150, -100, -75, -75, -50}};
-  const std::vector<double> slopes1 = {0.000512288, 0.000504447, 0.000398085, 0.000352033, 0.000340472, 0.000288574, 0.000230374, 0.000180565, 0.000149492};
-  const std::vector<double> slopes2 = {0.0710106, 0.0688699, 0.0656762, 0.0779356, 0.0669181, 0.0567078, 0.0892771, 0.0741799, 0.102583};
-  const std::vector<double> slopes3 = {-0.163365, -0.198488, -0.0270795, -0.0147063, -0.0501764, -0.0353731, 0.110071, 1.85442e-06, 2.78554e-05};
-
-  // // Var name is called double_sided, but is NOT, for DUNE FD1 HD 1x2x6 modded geometry (CPA side PDs)
-  const double fGHVUVPars_double_sided[4][9] = { {0.961665, 0.942798, 0.901685, 0.827961, 0.741428, 0.639592, 0.528896, 0.401595, 0.303769},
-                                                 {145.841, 149.406, 148.492, 149.003, 158.973, 171.996, 177.731, 171.194, 121.817},
-                                                 {191.169, 193.533, 225.963, 259.389, 293.242, 329.535, 354.529, 368.491, 378.918},
-                                                 {-275, -250, -200, -200, -150, -100, -75, -75, -50}};
-  const std::vector<double> slopes1_double_sided = {0.000478927, 0.000463266, 0.000424549, 0.000381316, 0.00034182, 0.000297816, 0.000246187, 0.000188945, 0.000138832};
-  const std::vector<double> slopes2_double_sided = {0.0552919, 0.0493126, 0.053459, 0.061509, 0.0474781, 0.0328393, 0.0290847, 0.0182963, 0.0559335};
-  const std::vector<double> slopes3_double_sided = {-0.075703, -0.0626933, -0.0742686, -0.104306, -0.117501, -0.135934, -0.159824, -0.156963, -0.188806};
+  const std::vector<double> slopes1 = {0.000477157, 0.00046539, 0.000426561, 0.000380635, 0.000341355, 0.000297682, 0.000245961, 0.000189099, 0.000139638};
+  const std::vector<double> slopes2 = {0.0550501, 0.0493876, 0.0538689, 0.0617787, 0.0477559, 0.032564, 0.0286264, 0.0184602, 0.0453299};
+  const std::vector<double> slopes3 = {-0.0745289, -0.0629413, -0.0754967, -0.104142, -0.117681, -0.135749, -0.158582, -0.157273, -0.167454};
+  // double_sided
+  const double fGHVUVPars_double_sided[4][9] = { {0.96311, 0.941925, 0.901074, 0.827969, 0.74171, 0.639441, 0.529001, 0.401473, 0.3031},
+                                    {146.011, 149.516, 148.276, 148.898, 158.811, 171.994, 177.966, 171.344, 129.448},
+                                    {190.428, 193.476, 226.5, 259.491, 293.266, 329.594, 353.936, 368.606, 363.766},
+                                    {-275, -250, -200, -200, -150, -100, -75, -75, -50}};
+  const std::vector<double> slopes1_double_sided = {0.000477157, 0.00046539, 0.000426561, 0.000380635, 0.000341355, 0.000297682, 0.000245961, 0.000189099, 0.000139638};
+  const std::vector<double> slopes2_double_sided = {0.0550501, 0.0493876, 0.0538689, 0.0617787, 0.0477559, 0.032564, 0.0286264, 0.0184602, 0.0453299};
+  const std::vector<double> slopes3_double_sided = {-0.0745289, -0.0629413, -0.0754967, -0.104142, -0.117681, -0.135749, -0.158582, -0.157273, -0.167454};
 
   // laterals
-  const double fGHVUVPars_lateral[4][9] = { {0.935032, 0.910678, 0.891631, 0.831471, 0.738872, 0.646347, 0.548337, 0.421256, 0.311587},
-                                            {133.584, 133.993, 140.251, 146.678, 162.467, 177.315, 185.046, 185.829, 162.883},
-                                            {258.6, 291.263, 267.608, 268.856, 317.191, 326.81, 287.43, 349.998, 349.971},
-                                            {-275, -250, -200, -200, -150, -100, -75, -75, -50}};
-  const std::vector<double> slopes1_lateral = {0.000512288, 0.000504447, 0.000398085, 0.000352033, 0.000340472, 0.000288574, 0.000230374, 0.000180565, 0.000149492};
-  const std::vector<double> slopes2_lateral = {0.0710106, 0.0688699, 0.0656762, 0.0779356, 0.0669181, 0.0567078, 0.0892771, 0.0741799, 0.102583};
-  const std::vector<double> slopes3_lateral = {-0.163365, -0.198488, -0.0270795, -0.0147063, -0.0501764, -0.0353731, 0.110071, 1.85442e-06, 2.78554e-05};
+  const double fGHVUVPars_lateral[4][9] = { {0.96311, 0.941925, 0.901074, 0.827969, 0.74171, 0.639441, 0.529001, 0.401473, 0.3031},
+                                    {146.011, 149.516, 148.276, 148.898, 158.811, 171.994, 177.966, 171.344, 129.448},
+                                    {190.428, 193.476, 226.5, 259.491, 293.266, 329.594, 353.936, 368.606, 363.766},
+                                    {-275, -250, -200, -200, -150, -100, -75, -75, -50}};
+  const std::vector<double> slopes1_lateral = {0.000477157, 0.00046539, 0.000426561, 0.000380635, 0.000341355, 0.000297682, 0.000245961, 0.000189099, 0.000139638};
+  const std::vector<double> slopes2_lateral = {0.0550501, 0.0493876, 0.0538689, 0.0617787, 0.0477559, 0.032564, 0.0286264, 0.0184602, 0.0453299};
+  const std::vector<double> slopes3_lateral = {-0.0745289, -0.0629413, -0.0754967, -0.104142, -0.117681, -0.135749, -0.158582, -0.157273, -0.167454};
 
   // interpolate.
   /*std::vector<double> fGH_d_anode = {26., 105., 180., 254.}; // larger distances use 260cm case
@@ -168,15 +167,14 @@ const double pi = 3.1416;
   */
 
   // dome GH
-  const double fGHVUVPars_dome[4][9] = { {0.935032, 0.910678, 0.891631, 0.831471, 0.738872, 0.646347, 0.548337, 0.421256, 0.311587},
-                                         {133.584, 133.993, 140.251, 146.678, 162.467, 177.315, 185.046, 185.829, 162.883},
-                                         {258.6, 291.263, 267.608, 268.856, 317.191, 326.81, 287.43, 349.998, 349.971},
-                                         {-275, -250, -200, -200, -150, -100, -75, -75, -50} };
-  // dome border corrections
+  const double fGHVUVPars_dome[4][9] = { {0.96311, 0.941925, 0.901074, 0.827969, 0.74171, 0.639441, 0.529001, 0.401473, 0.3031},
+                                    {146.011, 149.516, 148.276, 148.898, 158.811, 171.994, 177.966, 171.344, 129.448},
+                                    {190.428, 193.476, 226.5, 259.491, 293.266, 329.594, 353.936, 368.606, 363.766},
+                                    {-275, -250, -200, -200, -150, -100, -75, -75, -50}};
   const std::vector<double> angulo_dome = {5, 15, 25, 35, 45, 55, 65, 75, 85};
-  const std::vector<double> slopes1_dome = {0.000512288, 0.000504447, 0.000398085, 0.000352033, 0.000340472, 0.000288574, 0.000230374, 0.000180565, 0.000149492};
-  const std::vector<double> slopes2_dome = {0.0710106, 0.0688699, 0.0656762, 0.0779356, 0.0669181, 0.0567078, 0.0892771, 0.0741799, 0.102583};
-  const std::vector<double> slopes3_dome = {-0.163365, -0.198488, -0.0270795, -0.0147063, -0.0501764, -0.0353731, 0.110071, 1.85442e-06, 2.78554e-05};
+  const std::vector<double> slopes1_dome = {0.000477157, 0.00046539, 0.000426561, 0.000380635, 0.000341355, 0.000297682, 0.000245961, 0.000189099, 0.000139638};
+  const std::vector<double> slopes2_dome = {0.0550501, 0.0493876, 0.0538689, 0.0617787, 0.0477559, 0.032564, 0.0286264, 0.0184602, 0.0453299};
+  const std::vector<double> slopes3_dome = {-0.0745289, -0.0629413, -0.0754967, -0.104142, -0.117681, -0.135749, -0.158582, -0.157273, -0.167454};
 
 
 
@@ -409,7 +407,7 @@ int main(int argc, char * argv[]){
   tree->SetBranchAddress("genPhotons", &genPhotons);
 
   // loop through TTree
-  TH2F* h_truePE_vs_predPE = new TH2F("h_truePE_vs_predPE", "", 50, 0, 4000e6, 50, 0, 4000e6);
+  TH2F* h_truePE_vs_predPE = new TH2F("h_truePE_vs_predPE", "", 50, 0, 1.6e6, 50, 0, 1.6e6);
   for(int n=0; n < tree->GetEntries(); n++) {
 
     tree->GetEntry(n);
@@ -425,8 +423,11 @@ int main(int argc, char * argv[]){
 
     // loop through optical channels
     //if (posSource[0] > 0) continue;  // for single sided GH curves, only select the one TPC
-    double total_pe_truth, total_pe_prediction;
+    double total_pe_truth(0), total_pe_prediction(0);
+    // double total_pe_prediction = 0;
+    // double total_pe_truth = 0;
     for (int nPMT = 0; nPMT < numberPMTs; nPMT++) {
+      //if (nPMT>479) continue;
 
       //std::cout << "channel started" << std::endl;
 
@@ -442,7 +443,7 @@ int main(int argc, char * argv[]){
       // else op_channel_orientation = 0;
 
       // double vs. single sided arapucas hack
-      // bool isDouble=false; //This gets rid of the double-sided XARPUCAS design, maybe? Uncomment below to reinclude
+      bool isDouble=false; //This gets rid of the double-sided XARPUCAS design, maybe? Uncomment below to reinclude
       /*if (OpDetPoint[0] > 350.){
         if (OpDetPoint[2] < 231.){
           if ( (OpDetPoint[1] < 35.) || ((OpDetPoint[1] > 210.) && (OpDetPoint[1] < 340.)) || ((OpDetPoint[1] > 450.) && (OpDetPoint[1] < 510.)) || (OpDetPoint[1] > 570.) ){
@@ -470,7 +471,7 @@ int main(int argc, char * argv[]){
       double nPhotons_solid = VUVHits(genPhotons,ScintPoint,OpDetPoint,OpDetType);
       double distance_vuv = sqrt(pow(ScintPoint[0] - OpDetPoint[0],2) + pow(ScintPoint[1] - OpDetPoint[1],2) + pow(ScintPoint[2] - OpDetPoint[2],2));
 
-      //if (VUV_hits[pmt_index] < 50) continue;
+      if (VUV_hits[pmt_index] < 50) continue;
 
       total_pe_truth += VUV_hits[nPMT];
       total_pe_prediction += nPhotons_solid;
@@ -513,7 +514,7 @@ int main(int argc, char * argv[]){
 
   //TString type = "lateral"; //cathode lateral
   double chosen_x = 946;
-  auto line1 = new TLine(0,0,4000e6, 4000e6);
+  auto line1 = new TLine(0,0,1.6e6, 1.6e6);
   gPad->SetLogz();
   h_truePE_vs_predPE->Draw("colz");
   line1->SetLineColor(kRed);
@@ -749,7 +750,8 @@ int VUVHits(const int &Nphotons_created, const TVector3 &ScintPoint, const TVect
   int j = (theta/delta_angulo);
   // distance from center for border corrections (cathode), and from anode (laterals)
   double r_distance = 0;
-  if (op_channel_orientation == 0)  r_distance = sqrt( pow(ScintPoint[1] - y_foils, 2) + pow(ScintPoint[2] - z_foils, 2));
+  if (op_channel_orientation == 0)  r_distance = sqrt( pow(ScintPoint[1] - y_foils, 2) + pow(ScintPoint[2] - z_foils, 2)); //no foils for 1x2x6
+  //if (op_channel_orientation == 0)  r_distance = sqrt( pow(ScintPoint[1], 2) + pow(ScintPoint[2], 2));
   else if (op_channel_orientation == 1) r_distance = abs(325.01 - ScintPoint[0]);
   // GH parameters
   double pars_ini[4] = {0,0,0,0};
