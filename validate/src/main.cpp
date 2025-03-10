@@ -26,7 +26,7 @@ struct acc{
 
 // function prototypes
 int VisHits(const int &Nphotons_created, const TVector3 &ScintPoint, const TVector3 &OpDetPoint, const int &optical_detector_type);
-int VUVHits(const int &Nphotons_created, const TVector3 &ScintPoint, const TVector3 &OpDetPoint, const int &optical_detector_type);
+int VUVHits(const int &Nphotons_created, const TVector3 &ScintPoint, const TVector3 &OpDetPoint, const int &optical_detector_type, const double &cosine, const double &theta, const double distance, const int &j);
 
 Double_t GaisserHillas(double x,double *par);
 double omega(const double &a, const double &b, const double &d);
@@ -101,18 +101,20 @@ const double pi = 3.1416;
   // Argon, RS = 99.9cm, flat PDs (Arapucas/Supercells)
   const std::vector<double> angulo = {5, 15, 25, 35, 45, 55, 65, 75, 85};
   // for DUNE FD1 HD 1x2x6 modded geometry (CPA side PDs)
-  const double fGHVUVPars[4][9] = { {0.96311, 0.941925, 0.901074, 0.827969, 0.74171, 0.639441, 0.529001, 0.401473, 0.3031},
-                                    {146.011, 149.516, 148.276, 148.898, 158.811, 171.994, 177.966, 171.344, 129.448},
-                                    {190.428, 193.476, 226.5, 259.491, 293.266, 329.594, 353.936, 368.606, 363.766},
-                                    {-275, -250, -200, -200, -150, -100, -75, -75, -50}};
-  const std::vector<double> slopes1 = {0.000477157, 0.00046539, 0.000426561, 0.000380635, 0.000341355, 0.000297682, 0.000245961, 0.000189099, 0.000139638};
-  const std::vector<double> slopes2 = {0.0550501, 0.0493876, 0.0538689, 0.0617787, 0.0477559, 0.032564, 0.0286264, 0.0184602, 0.0453299};
-  const std::vector<double> slopes3 = {-0.0745289, -0.0629413, -0.0754967, -0.104142, -0.117681, -0.135749, -0.158582, -0.157273, -0.167454};
+  const double fGHVUVPars[4][9] = { {2.83662, 2.78267, 2.6701, 2.45801, 2.20845, 1.90297, 1.57653, 1.19622, 0.911946},
+                                    {147.632, 152.908, 150.752, 150.93, 161.787, 178.607, 185.14, 177.828, 140.332},
+                                    {60.6497, 92.39, 153.349, 175.23, 248.877, 271.499, 300.503, 313.338, 323.576},
+                                    {-1800, -1000, -500, -500, -250, -200, -150, -150, -50}};
+
+                                    //{-275, -250, -200, -200, -150, -100, -75, -75, -50}
+  const std::vector<double> slopes1 = {0.00136662, 0.00133651, 0.00124256, 0.00111942, 0.00101549, 0.000879445, 0.00072483, 0.000559757, 0.00042345};
+  const std::vector<double> slopes2 = {0.0685304, 0.0573245, 0.0623299, 0.0733342, 0.051667, 0.0366176, 0.0319569, 0.0194517, 0.0370617};
+  const std::vector<double> slopes3 = {-0.0259989, -0.031503, -0.054348, -0.0765074, -0.103697, -0.117586, -0.140132, -0.138248, -0.135238};
   // double_sided
   const double fGHVUVPars_double_sided[4][9] = { {0.96311, 0.941925, 0.901074, 0.827969, 0.74171, 0.639441, 0.529001, 0.401473, 0.3031},
                                     {146.011, 149.516, 148.276, 148.898, 158.811, 171.994, 177.966, 171.344, 129.448},
                                     {190.428, 193.476, 226.5, 259.491, 293.266, 329.594, 353.936, 368.606, 363.766},
-                                    {-275, -250, -200, -200, -150, -100, -75, -75, -50}};
+                                    {-400, -350, -300, -300, -250, -150, -100, -100, -50}};
   const std::vector<double> slopes1_double_sided = {0.000477157, 0.00046539, 0.000426561, 0.000380635, 0.000341355, 0.000297682, 0.000245961, 0.000189099, 0.000139638};
   const std::vector<double> slopes2_double_sided = {0.0550501, 0.0493876, 0.0538689, 0.0617787, 0.0477559, 0.032564, 0.0286264, 0.0184602, 0.0453299};
   const std::vector<double> slopes3_double_sided = {-0.0745289, -0.0629413, -0.0754967, -0.104142, -0.117681, -0.135749, -0.158582, -0.157273, -0.167454};
@@ -121,7 +123,7 @@ const double pi = 3.1416;
   const double fGHVUVPars_lateral[4][9] = { {0.96311, 0.941925, 0.901074, 0.827969, 0.74171, 0.639441, 0.529001, 0.401473, 0.3031},
                                     {146.011, 149.516, 148.276, 148.898, 158.811, 171.994, 177.966, 171.344, 129.448},
                                     {190.428, 193.476, 226.5, 259.491, 293.266, 329.594, 353.936, 368.606, 363.766},
-                                    {-275, -250, -200, -200, -150, -100, -75, -75, -50}};
+                                    {-400, -350, -300, -300, -250, -150, -100, -100, -50}};
   const std::vector<double> slopes1_lateral = {0.000477157, 0.00046539, 0.000426561, 0.000380635, 0.000341355, 0.000297682, 0.000245961, 0.000189099, 0.000139638};
   const std::vector<double> slopes2_lateral = {0.0550501, 0.0493876, 0.0538689, 0.0617787, 0.0477559, 0.032564, 0.0286264, 0.0184602, 0.0453299};
   const std::vector<double> slopes3_lateral = {-0.0745289, -0.0629413, -0.0754967, -0.104142, -0.117681, -0.135749, -0.158582, -0.157273, -0.167454};
@@ -170,7 +172,7 @@ const double pi = 3.1416;
   const double fGHVUVPars_dome[4][9] = { {0.96311, 0.941925, 0.901074, 0.827969, 0.74171, 0.639441, 0.529001, 0.401473, 0.3031},
                                     {146.011, 149.516, 148.276, 148.898, 158.811, 171.994, 177.966, 171.344, 129.448},
                                     {190.428, 193.476, 226.5, 259.491, 293.266, 329.594, 353.936, 368.606, 363.766},
-                                    {-275, -250, -200, -200, -150, -100, -75, -75, -50}};
+                                    {-400, -350, -300, -300, -250, -150, -100, -100, -50}};
   const std::vector<double> angulo_dome = {5, 15, 25, 35, 45, 55, 65, 75, 85};
   const std::vector<double> slopes1_dome = {0.000477157, 0.00046539, 0.000426561, 0.000380635, 0.000341355, 0.000297682, 0.000245961, 0.000189099, 0.000139638};
   const std::vector<double> slopes2_dome = {0.0550501, 0.0493876, 0.0538689, 0.0617787, 0.0477559, 0.032564, 0.0286264, 0.0184602, 0.0453299};
@@ -331,7 +333,7 @@ const std::vector<std::vector<std::vector<double>>> VIS_RS100_SBND_Borders = {
 // fit settings
 // angular bin size, deg
 const int number_angle_bins = 9;
-const double delta_angulo = 90 / number_angle_bins;
+const double delta_angulo = 90. / number_angle_bins;
 
 // range and step of profiling
 const double d_min = 0;
@@ -467,27 +469,37 @@ int main(int argc, char * argv[]){
       //if ( OpDetPoint[0] > 0 ) continue;
       //if (!isDouble) continue; // remove non double shifted.
 
-      // solid angle prediction
-      double nPhotons_solid = VUVHits(genPhotons,ScintPoint,OpDetPoint,OpDetType);
-      double distance_vuv = sqrt(pow(ScintPoint[0] - OpDetPoint[0],2) + pow(ScintPoint[1] - OpDetPoint[1],2) + pow(ScintPoint[2] - OpDetPoint[2],2));
-
-      if (VUV_hits[pmt_index] < 50) continue;
-
-      total_pe_truth += VUV_hits[nPMT];
-      total_pe_prediction += nPhotons_solid;
-
-      // distance and angle between ScintPoint and OpDetPoint
+      //calculate cosine, and the angle, this is for us to be able to plot only specific offset bins, in the rms/bias plot.
       double distance = sqrt(pow(ScintPoint[0] - OpDetPoint[0],2) + pow(ScintPoint[1] - OpDetPoint[1],2) + pow(ScintPoint[2] - OpDetPoint[2],2));
       double cosine;
-      // anode/cathode detectors -- fixed in x dimension
-      if (op_channel_orientation == 0) cosine = std::abs(ScintPoint[0] - OpDetPoint[0]) / distance;
-      // laterals -- fixed in y dimension
-      else if (op_channel_orientation == 1) cosine = std::abs(ScintPoint[1] - OpDetPoint[1]) / distance;
-      else {
-        std::cout << "Error: Invalid optical detector orientation." << std::endl;
-        exit(1);
-      }
-    double theta = acos(cosine)*180./pi;
+      cosine = std::abs(ScintPoint[0] - OpDetPoint[0]) / distance;
+      double theta = acos(cosine)*180./pi;
+      //now the offset angle bin
+      int j = theta/delta_angulo;
+
+      // solid angle prediction
+      double nPhotons_solid = VUVHits(genPhotons,ScintPoint,OpDetPoint,OpDetType,cosine,theta,distance,j);
+      double distance_vuv = sqrt(pow(ScintPoint[0] - OpDetPoint[0],2) + pow(ScintPoint[1] - OpDetPoint[1],2) + pow(ScintPoint[2] - OpDetPoint[2],2));
+
+      if (VUV_hits[pmt_index] < 100) continue;
+
+      //if (j!=1) continue;
+      total_pe_truth += VUV_hits[nPMT];
+      total_pe_prediction += nPhotons_solid;
+      
+
+    //   // distance and angle between ScintPoint and OpDetPoint
+    //   double distance = sqrt(pow(ScintPoint[0] - OpDetPoint[0],2) + pow(ScintPoint[1] - OpDetPoint[1],2) + pow(ScintPoint[2] - OpDetPoint[2],2));
+    //   double cosine;
+    //   // anode/cathode detectors -- fixed in x dimension
+    //   if (op_channel_orientation == 0) cosine = std::abs(ScintPoint[0] - OpDetPoint[0]) / distance;
+    //   // laterals -- fixed in y dimension
+    //   else if (op_channel_orientation == 1) cosine = std::abs(ScintPoint[1] - OpDetPoint[1]) / distance;
+    //   else {
+    //     std::cout << "Error: Invalid optical detector orientation." << std::endl;
+    //     exit(1);
+    //   }
+    // double theta = acos(cosine)*180./pi;
     //if (pmt_index==28 && ScintPoint[0]>89 && ScintPoint[0]<90 && ScintPoint[1]>510  && ScintPoint[1]<520)
     /*if (abs(VUV_hits[pmt_index]-nPhotons_solid)/VUV_hits[pmt_index]>0.2 && pmt_index==1){
       std::cout<<pmt_index<<", "<<theta<<", "<<distance_vuv<<", "<<ScintPoint[0]<<", "<<ScintPoint[1]<<", "<<ScintPoint[2]<<", "<<OpDetPoint[0]<<", "<<OpDetPoint[1]<<", "<<OpDetPoint[2]<<", "<<VUV_hits[pmt_index]<<", "<<nPhotons_solid<<", "<<(VUV_hits[pmt_index]-nPhotons_solid)/VUV_hits[pmt_index]<<std::endl;
@@ -672,7 +684,7 @@ int main(int argc, char * argv[]){
 
 
 // VUV hits calculation
-int VUVHits(const int &Nphotons_created, const TVector3 &ScintPoint, const TVector3 &OpDetPoint, const int &optical_detector_type) {
+int VUVHits(const int &Nphotons_created, const TVector3 &ScintPoint, const TVector3 &OpDetPoint, const int &optical_detector_type, const double &cosine, const double &theta, const double distance, const int &j) {
 
   // orientation hack
   int op_channel_orientation = 0;
@@ -695,17 +707,17 @@ int VUVHits(const int &Nphotons_created, const TVector3 &ScintPoint, const TVect
   }*/
 
   // distance and angle between ScintPoint and OpDetPoint
-  double distance = sqrt(pow(ScintPoint[0] - OpDetPoint[0],2) + pow(ScintPoint[1] - OpDetPoint[1],2) + pow(ScintPoint[2] - OpDetPoint[2],2));
-  double cosine;
+  //double distance = sqrt(pow(ScintPoint[0] - OpDetPoint[0],2) + pow(ScintPoint[1] - OpDetPoint[1],2) + pow(ScintPoint[2] - OpDetPoint[2],2));
+  //double cosine;
   // anode/cathode detectors -- fixed in x dimension
-  if (op_channel_orientation == 0) cosine = std::abs(ScintPoint[0] - OpDetPoint[0]) / distance;
+  //if (op_channel_orientation == 0) cosine = std::abs(ScintPoint[0] - OpDetPoint[0]) / distance;
   // laterals -- fixed in y dimension
-  else if (op_channel_orientation == 1) cosine = std::abs(ScintPoint[1] - OpDetPoint[1]) / distance;
-  else {
-    std::cout << "Error: Invalid optical detector orientation." << std::endl;
-    exit(1);
-  }
-  double theta = acos(cosine)*180./pi;
+  //else if (op_channel_orientation == 1) cosine = std::abs(ScintPoint[1] - OpDetPoint[1]) / distance;
+  // else {
+  //   std::cout << "Error: Invalid optical detector orientation." << std::endl;
+  //   exit(1);
+  // }
+  //double theta = acos(cosine)*180./pi;
 
   // calculate solid angle:
   double solid_angle = 0;
@@ -747,11 +759,11 @@ int VUVHits(const int &Nphotons_created, const TVector3 &ScintPoint, const TVect
 
   // determine Gaisser-Hillas correction for Rayleigh scattering distance and angular dependence, accounting for border effects
   // offset angle bin
-  int j = (theta/delta_angulo);
+
+  // int j = (theta/delta_angulo);
   // distance from center for border corrections (cathode), and from anode (laterals)
   double r_distance = 0;
-  if (op_channel_orientation == 0)  r_distance = sqrt( pow(ScintPoint[1] - y_foils, 2) + pow(ScintPoint[2] - z_foils, 2)); //no foils for 1x2x6
-  //if (op_channel_orientation == 0)  r_distance = sqrt( pow(ScintPoint[1], 2) + pow(ScintPoint[2], 2));
+  if (op_channel_orientation == 0)  r_distance = sqrt( pow(ScintPoint[1] - y_foils, 2) + pow(ScintPoint[2] - z_foils, 2)); 
   else if (op_channel_orientation == 1) r_distance = abs(325.01 - ScintPoint[0]);
   // GH parameters
   double pars_ini[4] = {0,0,0,0};

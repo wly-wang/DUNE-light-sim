@@ -37,7 +37,7 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
        bool IsSphere, std::vector<double> &v6, std::vector<double> &v7) {
   std::cout<<"calcula function ..."<<std::endl;
 
-  double min_number_entries = 50;
+  double min_number_entries = 100;
   // width and height in cm of single arapuca active window
   double arapuca_w = 10;
   double arapuca_h = 47.75;
@@ -354,12 +354,13 @@ int main(int argc, char * argv[]) {
       else pars_ini[3] = -3000;*/
 
       // argon cathode
-      /*if (j < 1) pars_ini[3] = -1800;
-      else if (j < 4) pars_ini[3] = -1000;
-      else if (j < 5) pars_ini[3] = -500;
-      else if (j < 6) pars_ini[3] = -250;
-      else if (j < 7) pars_ini[3] = -200;
-      else pars_ini[3] = -75;*/
+      if (j < 1) pars_ini[3] = -1800;
+      else if (j < 2) pars_ini[3] = -1000;
+      else if (j < 4) pars_ini[3] = -500;
+      else if (j < 5) pars_ini[3] = -250;
+      else if (j < 6) pars_ini[3] = -200;
+      else if (j < 8) pars_ini[3] = -150;
+      else pars_ini[3] = -50;
 
       // for cathode. the tune
       /*if (j == 1 && k < 5) {
@@ -380,14 +381,24 @@ int main(int argc, char * argv[]) {
       if (k == 6 && j == 3) pars_ini[3] = -300;
       */
 
-      // argon lateral
-      if (j < 1) pars_ini[3] = -275;
-      else if (j < 2) pars_ini[3] = -250;
-      else if (j < 4) pars_ini[3] = -200;
-      else if (j < 5) pars_ini[3] = -150;
-      else if (j < 6) pars_ini[3] = -100;
-      else if (j < 8) pars_ini[3] = -75;
-      else pars_ini[3] = -50;
+      //The testing one
+      // if (j < 1) pars_ini[3] = -240;
+      // else if (j < 2) pars_ini[3] = -220;
+      // else if (j < 4) pars_ini[3] = -210;
+      // else if (j < 5) pars_ini[3] = -150;
+      // else if (j < 6) pars_ini[3] = -100;
+      // else if (j < 8) pars_ini[3] = -75;
+      // else pars_ini[3] = -50;
+
+      // if (j < 1) pars_ini[3] = -400;
+      // else if (j < 2) pars_ini[3] = -350;
+      // else if (j < 4) pars_ini[3] = -300;
+      // else if (j < 5) pars_ini[3] = -250;
+      // else if (j < 6) pars_ini[3] = -150;
+      // else if (j < 8) pars_ini[3] = -100;
+      // else pars_ini[3] = -50;
+      //-350, -300, -250, -200, -150, -100, -50, -25, -10}
+      //{-150, -100, -75, -50, -25, -10, 0, 0, 10}
 
       GH[j][k]->FixParameter(3,pars_ini[3]);
       GH[j][k]->SetParameters(pars_ini);
@@ -538,7 +549,7 @@ int main(int argc, char * argv[]) {
     gg0[l]->GetXaxis()->SetTitleSize(0.05);
     gg0[l]->GetXaxis()->SetTitleOffset(1.);
     gg0[l]->GetXaxis()->SetRangeUser(0,d_max);
-    gg0[l]->GetYaxis()->SetRangeUser(0, 1.6); // changable.
+    gg0[l]->GetYaxis()->SetRangeUser(0, 5); // changable.
     gg0[l]->GetXaxis()->SetTitle("distance [cm]");
     gg0[l]->GetYaxis()->SetTitle("N_{hit} / N_{#Omega} / cos(#theta)");
     gg0[l]->Draw("ap");
@@ -826,7 +837,7 @@ int main(int argc, char * argv[]) {
   gf[0]->GetYaxis()->SetLabelSize(0.05);
   gf[0]->GetYaxis()->SetTitleSize(0.06);
   gf[0]->GetYaxis()->SetTitleOffset(0.74);
-  gf[0]->GetYaxis()->SetRangeUser(0,1.5);    // need to rewrite this
+  gf[0]->GetYaxis()->SetRangeUser(0,4.5);    // need to rewrite this
   gf[0]->GetXaxis()->SetRangeUser(0,range_d*1.05); // need to rewrite this to sset the range of border effect. 
   gf[0]->GetXaxis()->SetLabelSize(0.05);
   gf[0]->GetXaxis()->SetTitleSize(0.05);
@@ -863,7 +874,7 @@ int main(int argc, char * argv[]) {
   gf[1]->GetYaxis()->SetLabelSize(0.05);
   gf[1]->GetYaxis()->SetTitleSize(0.06);
   gf[1]->GetYaxis()->SetTitleOffset(0.74);
-  gf[1]->GetYaxis()->SetRangeUser(0,300);  // need to rewrite this
+  gf[1]->GetYaxis()->SetRangeUser(0,230);  // need to rewrite this
   gf[1]->GetXaxis()->SetRangeUser(0,range_d*1.05); // need to rewrite this to sset the range of border effect. 
   gf[1]->GetXaxis()->SetLabelSize(0.05);
   gf[1]->GetXaxis()->SetTitleSize(0.05);
@@ -900,7 +911,7 @@ int main(int argc, char * argv[]) {
   gf[2]->GetYaxis()->SetLabelSize(0.05);
   gf[2]->GetYaxis()->SetTitleSize(0.06);
   gf[2]->GetYaxis()->SetTitleOffset(0.74);
-  gf[2]->GetYaxis()->SetRangeUser(0,500);  // need to rewrite this
+  gf[2]->GetYaxis()->SetRangeUser(0,400);  // need to rewrite this
   gf[2]->GetXaxis()->SetRangeUser(0,range_d*1.05); // need to rewrite this to sset the range of border effect.
   gf[2]->GetXaxis()->SetLabelSize(0.05);
   gf[2]->GetXaxis()->SetTitleSize(0.05);
