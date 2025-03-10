@@ -409,7 +409,7 @@ int main(int argc, char * argv[]){
   tree->SetBranchAddress("genPhotons", &genPhotons);
 
   // loop through TTree
-  TH2F* h_truePE_vs_predPE = new TH2F("h_truePE_vs_predPE", "", 50, 0, 1.6e6, 50, 0, 1.6e6);
+  TH2F* h_truePE_vs_predPE = new TH2F("h_truePE_vs_predPE", "", 50, 0, 3e6, 50, 0, 3e6);
   for(int n=0; n < tree->GetEntries(); n++) {
 
     tree->GetEntry(n);
@@ -526,7 +526,7 @@ int main(int argc, char * argv[]){
 
   //TString type = "lateral"; //cathode lateral
   double chosen_x = 946;
-  auto line1 = new TLine(0,0,1.6e6, 1.6e6);
+  auto line1 = new TLine(0,0,3e6, 3e6);
   gPad->SetLogz();
   h_truePE_vs_predPE->Draw("colz");
   line1->SetLineColor(kRed);
