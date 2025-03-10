@@ -37,7 +37,7 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
        bool IsSphere, std::vector<double> &v6, std::vector<double> &v7) {
   std::cout<<"calcula function ..."<<std::endl;
 
-  double min_number_entries = 100;
+  double min_number_entries = 50;
   // width and height in cm of single arapuca active window
   double arapuca_w = 10;
   double arapuca_h = 47.75;
@@ -549,7 +549,7 @@ int main(int argc, char * argv[]) {
     gg0[l]->GetXaxis()->SetTitleSize(0.05);
     gg0[l]->GetXaxis()->SetTitleOffset(1.);
     gg0[l]->GetXaxis()->SetRangeUser(0,d_max);
-    gg0[l]->GetYaxis()->SetRangeUser(0, 5); // changable.
+    gg0[l]->GetYaxis()->SetRangeUser(0, 1.6); // changable.
     gg0[l]->GetXaxis()->SetTitle("distance [cm]");
     gg0[l]->GetYaxis()->SetTitle("N_{hit} / N_{#Omega} / cos(#theta)");
     gg0[l]->Draw("ap");
@@ -837,7 +837,7 @@ int main(int argc, char * argv[]) {
   gf[0]->GetYaxis()->SetLabelSize(0.05);
   gf[0]->GetYaxis()->SetTitleSize(0.06);
   gf[0]->GetYaxis()->SetTitleOffset(0.74);
-  gf[0]->GetYaxis()->SetRangeUser(0,4.5);    // need to rewrite this
+  gf[0]->GetYaxis()->SetRangeUser(0,1.5);    // need to rewrite this
   gf[0]->GetXaxis()->SetRangeUser(0,range_d*1.05); // need to rewrite this to sset the range of border effect. 
   gf[0]->GetXaxis()->SetLabelSize(0.05);
   gf[0]->GetXaxis()->SetTitleSize(0.05);

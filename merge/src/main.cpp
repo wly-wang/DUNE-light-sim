@@ -21,7 +21,7 @@ int main( int argc, char * argv[] )
   //std::string lista_files = "./List_of_Grid_files.txt";
   std::string lista_files = argv[1];
   int numberDevices = CHANNEL_NUMBER; // this is the number of lines in the optical map
-  int genPhotons = 100000;
+  int genPhotons = 200000;
 
   // Structures to collect data
   struct PointData
@@ -118,7 +118,7 @@ int main( int argc, char * argv[] )
           originData[ thisOrigin ].Vis_hits[i] = 0;
         }
 
-        originData[ thisOrigin ].GenPhotons = 100*100000;
+        originData[ thisOrigin ].GenPhotons = 100*200000;
         originData[ thisOrigin ].NumberDevices = numberDevices;
         originData[ thisOrigin ].Wavelength = Wavelength; // This doesn't make sense, and I'm pretty sure it's not used
       }
