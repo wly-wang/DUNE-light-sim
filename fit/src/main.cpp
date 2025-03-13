@@ -125,10 +125,10 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
       std::cout << "Warning: distance to center < 0" << std::endl;
       continue;
     }
-
+    std::cout << numberDevices << std::endl;
     //loop over the channels
     for(int i=0; i<numberDevices; i++) {
-      // if (i<479) continue;
+      //if (i<479) continue;
 
       // // Modification requried from Users:
       // bool isDouble=false;
@@ -149,15 +149,14 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
       // if (!isDouble) continue;    // remove double-sided supercells.
 
       int entries = VUV_hits[i];
+      if(i>479 && entries != 0){
+        std::cout << entries << std::endl;
+      }
       if(entries < min_number_entries) continue;
 
       double distance_to_pmt = sqrt(pow(posSource[0] - devx.at(i),2) +
                                     pow(posSource[1] - devy.at(i),2) +
                                     pow(posSource[2] - devz.at(i),2));
-      
-      // if (distance_to_pmt>500){
-      //   std::cout<<distance_to_pmt<<std::endl;
-      // }
 
       // calculate theta
       double theta = -1;
