@@ -90,7 +90,7 @@ const double z_dimension_foils = 500; // cm
 const double x_foils = 360.279; const double y_foils = 0; const double z_foils = 679.572; // cm
 
 // LAr properties
-const double L_abs = 2000;
+const double L_abs = 8000;
 const double pi = 3.1416;
 
 
@@ -100,16 +100,27 @@ const double pi = 3.1416;
   // USERS: update here with the print out from the fit!
   // Argon, RS = 99.9cm, flat PDs (Arapucas/Supercells)
   const std::vector<double> angulo = {5, 15, 25, 35, 45, 55, 65, 75, 85};
+  
   // for DUNE FD1 HD 1x2x6 modded geometry (CPA side PDs)
-  const double fGHVUVPars[4][9] = { {0.788877, 0.797175, 0.8564, 0.858543, 0.856562, 0.782502, 0.672327, 0.505053, 0.384634},
-                                    {487.589, 509.737, 478.397, 526.354, 533.059, 577.212, 631.416, 698.927, 792.399},
-                                    {258.911, 434.257, 391.261, 377.862, 349.995, 350.013, 350, 349.979, 349.982},
-                                    {-1800, -1000, -500, -500, -250, -200, -150, -150, -50}};
-
+  const double fGHVUVPars[4][9] = { {0.957612, 0.93683, 0.899086, 0.843891, 0.767748, 0.676682, 0.555349, 0.407757, -1.6845e+08},
+                                    {300.349, 316.167, 347.678, 395.904, 477.253, 593.161, 685.565, 631.086, 514.762},
+                                    {357.56, 356.278, 359.517, 355.812, 350, 350, 350, 349.999, 282.939},
+                                    {-500, -500, -500, -500, -500, -500, -500, -100, -100}};
                                     //{-275, -250, -200, -200, -150, -100, -75, -75, -50}
-  const std::vector<double> slopes1 = {0.00141171, 0.00133197, 0.00111514, 0.000903616, 0.000638373, 0.000429538, 0.000258643, 0.000115507, -7.32831e-06};
-  const std::vector<double> slopes2 = {0.0535448, 0.0390295, 0.0927037, 0.0538991, -0.0305279, -0.103913, -0.169671, -0.228704, -0.357978};
-  const std::vector<double> slopes3 = {-0.232113, -0.386299, -0.147256, -0.0994259, 5.98195e-06, -4.94395e-05, -4.68047e-07, 3.10723e-05, 3.87943e-06};
+  const std::vector<double> slopes1 = {0.000197977, 0.00020576, 0.000184912, 0.000136937, 7.52577e-05, 1.48313e-05, -1.42797e-05, 4.49956e-06, -27463.9};
+  const std::vector<double> slopes2 = {0.109608, 0.0958791, 0.0539651, -0.0140373, -0.0948933, -0.151146, -0.0843838, 0.133296, -0.681589};
+  const std::vector<double> slopes3 = {-0.0287468, -0.0238621, -0.0361942, -0.0221031, -1.01572e-07, 1.84264e-07, 7.04489e-07, 1.13943e-06, -0.401696};
+
+  // const double fGHVUVPars[4][6] = { {0.957612, 0.93683, 0.899086, 0.843891, 0.767748, 0.676682},
+  //                                   {300.349, 316.167, 347.678, 395.904, 477.253, 593.161},
+  //                                   {357.56, 356.278, 359.517, 355.812, 350, 350},
+  //                                   {-500, -500, -500, -500, -500, -500}};
+  //                                   //{-275, -250, -200, -200, -150, -100, -75, -75, -50}
+  // const std::vector<double> slopes1 = {0.000197977, 0.00020576, 0.000184912, 0.000136937, 7.52577e-05, 1.48313e-05};
+  // const std::vector<double> slopes2 = {0.109608, 0.0958791, 0.0539651, -0.0140373, -0.0948933, -0.151146};
+  // const std::vector<double> slopes3 = {-0.0287468, -0.0238621, -0.0361942, -0.0221031, -1.01572e-07, 1.84264e-07};
+  // double_sided
+
   // double_sided
   const double fGHVUVPars_double_sided[4][9] = { {0.96311, 0.941925, 0.901074, 0.827969, 0.74171, 0.639441, 0.529001, 0.401473, 0.3031},
                                     {146.011, 149.516, 148.276, 148.898, 158.811, 171.994, 177.966, 171.344, 129.448},
@@ -332,6 +343,9 @@ const std::vector<std::vector<std::vector<double>>> VIS_RS100_SBND_Borders = {
 
 // fit settings
 // angular bin size, deg
+// const int number_angle_bins = 9;
+// const double delta_angulo = 90. / number_angle_bins;
+
 const int number_angle_bins = 9;
 const double delta_angulo = 90. / number_angle_bins;
 
@@ -409,7 +423,7 @@ int main(int argc, char * argv[]){
   tree->SetBranchAddress("genPhotons", &genPhotons);
 
   // loop through TTree
-  TH2F* h_truePE_vs_predPE = new TH2F("h_truePE_vs_predPE", "", 50, 0, 1.5e6, 50, 0, 1.5e6);
+  TH2F* h_truePE_vs_predPE = new TH2F("h_truePE_vs_predPE", "", 50, 0, 5e5, 50, 0, 5e5);
   for(int n=0; n < tree->GetEntries(); n++) {
 
     tree->GetEntry(n);
@@ -481,7 +495,7 @@ int main(int argc, char * argv[]){
       double nPhotons_solid = VUVHits(genPhotons,ScintPoint,OpDetPoint,OpDetType,cosine,theta,distance,j);
       double distance_vuv = sqrt(pow(ScintPoint[0] - OpDetPoint[0],2) + pow(ScintPoint[1] - OpDetPoint[1],2) + pow(ScintPoint[2] - OpDetPoint[2],2));
 
-      if (VUV_hits[pmt_index] < 50) continue;
+      if (VUV_hits[pmt_index] < 0.1) continue;
 
       //if (j!=1) continue;
       total_pe_truth += VUV_hits[nPMT];
@@ -526,7 +540,7 @@ int main(int argc, char * argv[]){
 
   //TString type = "lateral"; //cathode lateral
   double chosen_x = 946;
-  auto line1 = new TLine(0,0,1.5e6, 1.5e6);
+  auto line1 = new TLine(0,0,5e5, 5e5);
   gPad->SetLogz();
   h_truePE_vs_predPE->Draw("colz");
   line1->SetLineColor(kRed);

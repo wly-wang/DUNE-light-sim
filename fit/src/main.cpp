@@ -125,7 +125,7 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
       std::cout << "Warning: distance to center < 0" << std::endl;
       continue;
     }
-    std::cout << numberDevices << std::endl;
+  
     //loop over the channels
     for(int i=0; i<numberDevices; i++) {
       //if (i<479) continue;
@@ -149,9 +149,10 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
       // if (!isDouble) continue;    // remove double-sided supercells.
 
       int entries = VUV_hits[i];
-      if(i>479 && entries != 0){
-        std::cout << entries << std::endl;
-      }
+      // if(i>479){
+      //   std::cout << VUV_hits[i] << std::endl;
+      // }
+      
       if(entries < min_number_entries) continue;
 
       double distance_to_pmt = sqrt(pow(posSource[0] - devx.at(i),2) +
@@ -295,7 +296,7 @@ int main(int argc, char * argv[]) {
 
   //Distance range and step for the profile to fit with GH
   double d_min = 0;
-  double d_max = 800.; // changable 1400 - argon; 2000 -xenon
+  double d_max = 1000.; // changable 1400 - argon; 2000 -xenon
   double step_d = 50;
 
   bool isDouble=true;

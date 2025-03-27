@@ -16,6 +16,7 @@
 ../generate_xe/process22/semi_analytical_model.root
 ../generate_xe/process23/semi_analytical_model.root
 ../generate_xe/process24/semi_analytical_model.root
+../generate_xe/process25/semi_analytical_model.root
 ../generate_xe/process3/semi_analytical_model.root
 ../generate_xe/process4/semi_analytical_model.root
 ../generate_xe/process5/semi_analytical_model.root

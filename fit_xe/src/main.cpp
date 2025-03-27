@@ -37,7 +37,7 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
        bool IsSphere, std::vector<double> &v6, std::vector<double> &v7) {
   std::cout<<"calcula function ..."<<std::endl;
 
-  double min_number_entries = 50;
+  double min_number_entries = 0.1;
   // width and height in cm of single arapuca active window
   double arapuca_w = 10;
   double arapuca_h = 47.75;
@@ -45,6 +45,7 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
   double b = 8*2.54/2.;
   // Y-Z coordinates of the active volume center
   const double centerYZ[2] = {0, 697.17};
+  //const double centerYZ[2] = {300., 350.};
   //const double centerXZ[2] = {0., 1000.};
   //double x_anode = 324.97;//325.01;
   //double y_anode = 0;
@@ -125,7 +126,7 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
       std::cout << "Warning: distance to center < 0" << std::endl;
       continue;
     }
-    std::cout << numberDevices << std::endl;
+    // std::cout << numberDevices << std::endl;
     //loop over the channels
     for(int i=0; i<numberDevices; i++) {
       //if (i<479) continue;
@@ -295,25 +296,23 @@ int main(int argc, char * argv[]) {
 
   //Distance range and step for the profile to fit with GH
   double d_min = 0;
-  double d_max = 800.; // changable 1400 - argon; 2000 -xenon
-  double step_d = 50;
+  double d_max = 2000.; // changable 1400 - argon; 2000 -xenon
+  double step_d = 75;
 
   bool isDouble=true;
   //Center distance bins
-  double range_d = 900; //400;
+  double range_d = 900.; //400;
 
   // Modification requried from Users:
   const int M = 5;
   double range_d_array[M+1];
   if (!isDouble) {
-    //double range_d_array_temp[M+1] = {0.,100.,150.,200.,250.,300.,range_d};
     double range_d_array_temp[M+1] = {0.,200.,350.,500.,650.,range_d};
-    //double range_d_array_temp[M+1] = {200.,350.,500.,600.,range_d};
+    //double range_d_array_temp[M+1] = {0.,350.,650.,800.,1000.,1200.,range_d};
     std::copy(std::begin(range_d_array_temp), std::end(range_d_array_temp), std::begin(range_d_array));
   }else {
-    //double range_d_array_temp[M+1] = {0.,100.,150.,200.,250.,280.,range_d};
     double range_d_array_temp[M+1] = {0.,200.,350.,500.,650.,range_d};
-    //double range_d_array_temp[M+1] = {200.,350.,500.,600.,range_d};
+    //double range_d_array_temp[M+1] = {0.,350.,650.,800.,1000.,1200.,range_d};
     
     std::copy(std::begin(range_d_array_temp), std::end(range_d_array_temp), std::begin(range_d_array));
   }
@@ -349,36 +348,38 @@ int main(int argc, char * argv[]) {
       //GH[j][k]->SetParLimits(1,0,0.8);
 
       // xenon
-      /*if (j < 7) pars_ini[3] = -5000;
-      else pars_ini[3] = -3000;*/
-
+      if (j < 7) pars_ini[3] = -500;
+      else pars_ini[3] = -100;
+      // if (j < 8) pars_ini[3] = -2500;
+      // else pars_ini[3] = -100;
       // argon cathode
-      if (j < 1) pars_ini[3] = -1800;
-      else if (j < 2) pars_ini[3] = -1000;
-      else if (j < 4) pars_ini[3] = -500;
-      else if (j < 5) pars_ini[3] = -250;
-      else if (j < 6) pars_ini[3] = -200;
-      else if (j < 8) pars_ini[3] = -150;
-      else pars_ini[3] = -50;
+      // if (j < 1) pars_ini[3] = -2000;
+      // else if (j < 2) pars_ini[3] = -1500;
+      // else if (j < 4) pars_ini[3] = -1000;
+      // else if (j < 5) pars_ini[3] = -500;
+      // else if (j < 6) pars_ini[3] = -250;
+      // else if (j < 7) pars_ini[3] = -150;
+      // else pars_ini[3] = -50;
 
       // for cathode. the tune
-      /*if (j == 1 && k < 5) {
-        GH[j][k]->SetParLimits(1,125,300);
-        if (k == 3 || k == 4)
-          GH[j][k]->SetParLimits(0,1.15,1.25);
-        if (k == 5){
-          //GH[j][k]->SetParLimits(0,1.06,1.25);
-          GH[j][k]->SetParLimits(1,125,300);
-        }
-      }
+      // if (j == 1 && k < 5) {
+      //   GH[j][k]->SetParLimits(1,125,300);
+      //   if (k == 3 || k == 4)
+      //     GH[j][k]->SetParLimits(0,1.15,1.25);
+      //   if (k == 5){
+      //     //GH[j][k]->SetParLimits(0,1.06,1.25);
+      //     GH[j][k]->SetParLimits(1,125,300);
+      //   }
+      // }
 
-      if (k == 5 && j == 0) pars_ini[3] = -180;
-      //if (k == 5 && j == 1) pars_ini[3] = -150;
-      if (k == 6 && j == 0) pars_ini[3] = -150;
-      if (k == 6 && j == 1) pars_ini[3] = -100;
-      if (k == 6 && j == 2) pars_ini[3] = -500;
-      if (k == 6 && j == 3) pars_ini[3] = -300;
-      */
+      // if (k == 5 && j == 0) pars_ini[3] = -180;
+      // //if (k == 5 && j == 1) pars_ini[3] = -150;
+      // if (k == 6 && j == 0) pars_ini[3] = -150;
+      // if (k == 6 && j == 1) pars_ini[3] = -100;
+      // if (k == 6 && j == 2) pars_ini[3] = -500;
+      // if (k == 6 && j == 3) pars_ini[3] = -300;
+      // // if (j==6) pars_ini[3] = -200;
+      // if (j==8) pars_ini[3] = -100;
 
       //The testing one
       // if (j < 1) pars_ini[3] = -240;
@@ -473,8 +474,8 @@ int main(int argc, char * argv[]) {
       n_entries[j][k] = 0;
       TAxis *xaxis  =  pdiff_d[j][k]->GetXaxis();
       Int_t nbins  = xaxis->GetNbins();
-      double min = d_max;
-      double max = 0;
+      double min = 0;
+      double max = d_max;
       for (Int_t bin=0;bin<=nbins;bin++) {
         n_entries[j][k] += pdiff_d[j][k]->GetBinContent(bin);
         if(pdiff_d[j][k]->GetBinContent(bin) == 0) continue;
@@ -548,7 +549,7 @@ int main(int argc, char * argv[]) {
     gg0[l]->GetXaxis()->SetTitleSize(0.05);
     gg0[l]->GetXaxis()->SetTitleOffset(1.);
     gg0[l]->GetXaxis()->SetRangeUser(0,d_max);
-    gg0[l]->GetYaxis()->SetRangeUser(0, 2.25); // changable.
+    gg0[l]->GetYaxis()->SetRangeUser(0, 1.6); // changable.
     gg0[l]->GetXaxis()->SetTitle("distance [cm]");
     gg0[l]->GetYaxis()->SetTitle("N_{hit} / N_{#Omega} / cos(#theta)");
     gg0[l]->Draw("ap");

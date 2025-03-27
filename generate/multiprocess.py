@@ -34,6 +34,13 @@ yVals = [ 578.909, 570., 560., 550., 518.159, 510., 500., 490., 457.409, 450., 4
 
 zVals = [ 660.299, 548.699, 427.909, 316.309, 195.519, 35.1188]
 
+# # Quick test 
+# xVals = [0., 50.]
+
+# yVals = [100., 200.]
+
+# zVals = [300.]
+
 # Full Coverage 
 # xVals = [ -350., -340., -330., -320., -310., -300., -280., -250., -200., -150., -100., -50.,
 #           0., 50., 100., 150., 200., 250., 280., 300., 310., 320., 330., 340., 350. ]
@@ -50,7 +57,7 @@ zVals = [ 660.299, 548.699, 427.909, 316.309, 195.519, 35.1188]
 #           83.9188, 35.1188 ]
 
 # Define number of processes to use
-nProcesses = 30
+nProcesses = 25
 totalPositions = len( xVals ) * len( yVals ) * len( zVals )
 print( "Total positions: " + str( totalPositions ) )
 
