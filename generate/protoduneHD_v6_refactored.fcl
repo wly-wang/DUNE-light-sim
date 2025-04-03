@@ -79,15 +79,26 @@ physics:
 
  analyzers:
  {
-   pmtresponse: @local::dunefd_simphotoncounter    # defined in opticaldetectormodules.fcl
+   # pmtresponse: @local::dunefd_simphotoncounter    # defined in opticaldetectormodules_dune.fcl
+
+   XAresponse: # XArapuca response
+   {
+     module_type:             "SimPhotonCounter"
+     Verbosity:               1  # 1: output less on terminal---
+     InputModule:             "largeant"
+     MakeAllPhotonsTree:      true
+     MakeDetectedPhotonsTree: true
+     MakeOpDetsTree:          true
+     MakeOpDetEventsTree:     true
+   }
  }
 
  #define the producer and filter modules for this path, order matters,
  #filters reject all following items.  see lines starting physics.producers below
  simulate: [ generator, largeant ]
- analyzeIt:  [ pmtresponse ]
+ analyzeIt:  [ XAresponse ]
  #define the output stream, there could be more than one if using filters
- stream1:  [ ]
+ stream1:  [ out1 ]
 
  #trigger_paths is a keyword and contains the paths that modify the art::event,
  #ie filters and producers
@@ -118,17 +129,19 @@ physics.producers.generator.FillTree: false # for efficiency
 
 
 ##### Parameter changes for the pmt respnse analyzer (simphotoncounter) #####
-physics.analyzers.pmtresponse.SavePhotonOrigins: true
-physics.analyzers.pmtresponse.MakeAllPhotonsTree: true
-physics.analyzers.pmtresponse.MakeDetectedPhotonsTree: false
-physics.analyzers.pmtresponse.MakeOpDetsTree: false
-physics.analyzers.pmtresponse.MakeOpDetEventsTree: false
+#physics.analyzers.pmtresponse.SavePhotonOrigins: true
+#physics.analyzers.pmtresponse.MakeAllPhotonsTree: true
+#physics.analyzers.pmtresponse.MakeDetectedPhotonsTree: false
+#physics.analyzers.pmtresponse.MakeOpDetsTree: false
+#physics.analyzers.pmtresponse.MakeOpDetEventsTree: false
 
-services.OpDetResponseInterface.ChannelConversion: "fast"
+# services.OpDetResponseInterface.ChannelConversion: "fast"
+services.OpDetResponseInterface.ChannelConversion: "none"
 services.OpDetResponseInterface.LambdaShort:                4.3  # cm
 services.OpDetResponseInterface.LambdaLong:               225.0  # cm
 services.OpDetResponseInterface.FracShort:                 0.29
 services.OpDetResponseInterface.FracLong:                  0.71
+services.OpDetResponseInterface.service_provider: "DUNEOpDetResponse"
 
 # To disable wireplane absorption, uncomment this line
 services.LArG4Parameters.OpticalParamModels: ["TransparentPlaneAction"]
@@ -154,20 +167,25 @@ services.OpDetResponseInterface.LightGuideAttenuation: false
 
 
 #setting the optical properties of the materials in the geometry:
-services.LArPropertiesService.ReflectiveSurfaceEnergies:         [ 1.77, 2.0675, 2.481, 2.819, 2.953, 3.1807, 3.54, 4.135, 4.962, 5.39, 6.70, 7.09, 7.51, 9., 9.69, 10.51 ]
+services.LArPropertiesService.ReflectiveSurfaceEnergies:         [ 1.77, 2.0675, 2.481, 2.819, 2.953, 3.1807, 3.54, 4.135, 4.962, 5.39, 7., 15. ]
+# services.LArPropertiesService.ReflectiveSurfaceEnergies:         [ 1.77, 2.0675, 2.481, 2.819, 2.953, 3.1807, 3.54, 4.135, 4.962, 5.39, 6.70, 7.09, 7.51, 9., 9.69, 10.51 ]
 # 6.70, 7.09, 7.51 is xenon region, 9., 9.69, 10.51 is argon region.
-
 
 ##### Added material names and reflectances
 services.LArPropertiesService.ReflectiveSurfaceNames:   [ "STEEL_STAINLESS_Fe7Cr2Ni", "Copper_Beryllium_alloy25", "G10", "vm2000", "ALUMINUM_Al" ]
-services.LArPropertiesService.ReflectiveSurfaceReflectances: [ [0.66, 0.64, 0.62, 0.60, 0.59, 0.57, 0.53, 0.47, 0.39, 0.36,
-                                                               0.40, 0.40, 0.40, 0.30, 0.30, 0.30],
-                                                               [ 0.902, 0.841, 0.464, 0.379, 0.345, 0.299, 0.287, 0.264, 0.337, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
-                                                               [ 0.393, 0.405, 0.404, 0.352, 0.323, 0.243, 0.127, 0.065, 0.068, 0.068, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
-                                                               [ 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25,
-                                                               0.12, 0.12, 0.12, 0.06, 0.06, 0.06 ],
-                                                               [ 0.66, 0.64, 0.62, 0.60, 0.59, 0.57, 0.53, 0.47, 0.39, 0.36,
-                                                               0.70, 0.70, 0.70, 0.70, 0.70, 0.70] ]
+# services.LArPropertiesService.ReflectiveSurfaceReflectances: [ [0.66, 0.64, 0.62, 0.60, 0.59, 0.57, 0.53, 0.47, 0.39, 0.36,
+#                                                               0.40, 0.40, 0.40, 0.30, 0.30, 0.30],
+#                                                               [ 0.902, 0.841, 0.464, 0.379, 0.345, 0.299, 0.287, 0.264, 0.337, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
+#                                                               [ 0.393, 0.405, 0.404, 0.352, 0.323, 0.243, 0.127, 0.065, 0.068, 0.068, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
+#                                                               [ 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25,
+#                                                               0.12, 0.12, 0.12, 0.06, 0.06, 0.06 ],
+#                                                               [ 0.66, 0.64, 0.62, 0.60, 0.59, 0.57, 0.53, 0.47, 0.39, 0.36,
+#                                                               0.70, 0.70, 0.70, 0.70, 0.70, 0.70] ]
+services.LArPropertiesService.ReflectiveSurfaceReflectances:     [ [ 0.66, 0.64, 0.62, 0.60, 0.59, 0.57, 0.53, 0.47, 0.39, 0.36, 0.27, 0.25 ],
+                                                       [ 0.902, 0.841, 0.464, 0.379, 0.345, 0.299, 0.287, 0.264, 0.337, 0.3, 0.0, 0.0 ],
+                                                       [ 0.393, 0.405, 0.404, 0.352, 0.323, 0.243, 0.127, 0.065, 0.068, 0.068, 0.0, 0.0 ],
+                                                       [ 0.93, 0.93, 0.93, 0.93, 0.93, 0.93, 0.1, 0.1, 0.7, 0.3, 0.0, 0.0 ],
+                                                       [ 0.66, 0.64, 0.62, 0.60, 0.59, 0.57, 0.53, 0.47, 0.39, 0.36, 0.27, 0.25 ] ]
 
 # Rayleigh scattering length, 99.9cm @ 128nm
 # Argon energy: 9.68750 @ 128nm
