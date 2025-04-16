@@ -797,13 +797,13 @@ int VUVHits(const int &Nphotons_created, const TVector3 &ScintPoint, const TVect
       s3 = interpolate( angulo_dome, slopes3_dome, theta, true);
     }else if (optical_detector_type == 1){
       if (isDouble){
-        pars_ini[0] = fGHVUVPars_double_sided[0][j];
-        pars_ini[1] = fGHVUVPars_double_sided[1][j];
-        pars_ini[2] = fGHVUVPars_double_sided[2][j];
-        pars_ini[3] = fGHVUVPars_double_sided[3][j];
-        s1 = interpolate( angulo, slopes1_double_sided, theta, true);
-        s2 = interpolate( angulo, slopes2_double_sided, theta, true);
-        s3 = interpolate( angulo, slopes3_double_sided, theta, true);
+        pars_ini[0] = fGHVUVPars[0][j];
+        pars_ini[1] = fGHVUVPars[1][j];
+        pars_ini[2] = fGHVUVPars[2][j];
+        pars_ini[3] = fGHVUVPars[3][j];
+        s1 = interpolate( angulo, slopes1, theta, true);
+        s2 = interpolate( angulo, slopes2, theta, true);
+        s3 = interpolate( angulo, slopes3, theta, true);
         //std::cout<<"here2. "<<std::endl;
       }else{
         pars_ini[0] = fGHVUVPars[0][j];

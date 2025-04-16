@@ -44,7 +44,7 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
   // 8" PMT radius
   double b = 8*2.54/2.;
   // Y-Z coordinates of the active volume center
-  const double centerYZ[2] = {0, 697.17};
+  const double centerYZ[2] = {300., 350.};
   //const double centerYZ[2] = {300., 350.};
   //const double centerXZ[2] = {0., 1000.};
   //double x_anode = 324.97;//325.01;
@@ -295,24 +295,24 @@ int main(int argc, char * argv[]) {
   }
 
   //Distance range and step for the profile to fit with GH
-  double d_min = 0;
+  double d_min = 100;
   double d_max = 2000.; // changable 1400 - argon; 2000 -xenon
   double step_d = 75;
 
   bool isDouble=true;
   //Center distance bins
-  double range_d = 900.; //400;
+  double range_d = 500.; //400;
 
   // Modification requried from Users:
   const int M = 5;
   double range_d_array[M+1];
   if (!isDouble) {
-    double range_d_array_temp[M+1] = {0.,200.,350.,500.,650.,range_d};
-    //double range_d_array_temp[M+1] = {0.,350.,650.,800.,1000.,1200.,range_d};
+    //double range_d_array_temp[M+1] = {0.,200.,350.,500.,650.,range_d};
+    double range_d_array_temp[M+1] = {0.,100.,200.,250.,350.,range_d};
     std::copy(std::begin(range_d_array_temp), std::end(range_d_array_temp), std::begin(range_d_array));
   }else {
-    double range_d_array_temp[M+1] = {0.,200.,350.,500.,650.,range_d};
-    //double range_d_array_temp[M+1] = {0.,350.,650.,800.,1000.,1200.,range_d};
+    //double range_d_array_temp[M+1] = {0.,200.,350.,500.,650.,range_d};
+    double range_d_array_temp[M+1] = {0.,100.,200.,250.,350.,range_d};
     
     std::copy(std::begin(range_d_array_temp), std::end(range_d_array_temp), std::begin(range_d_array));
   }
@@ -343,12 +343,12 @@ int main(int argc, char * argv[]) {
 
       GH[j][k] =  new TF1("GH",GaisserHillas,0.,d_max,4);
 
-      double pars_ini[4] = {1., 128., 55, -2500};
+      double pars_ini[4] = {0., 128., 55, -500};
       GH[j][k]->SetParLimits(2,10,350);
       //GH[j][k]->SetParLimits(1,0,0.8);
 
       // xenon
-      if (j < 7) pars_ini[3] = -500;
+      if (j < 6) pars_ini[3] = -500;
       else pars_ini[3] = -100;
       // if (j < 8) pars_ini[3] = -2500;
       // else pars_ini[3] = -100;
@@ -556,8 +556,10 @@ int main(int argc, char * argv[]) {
 
 //Info in <ROOT::Math::ParameterSettings>: lower/upper bounds outside current parameter value. The value will be set to (low+up)/2
     for(int j=0; j < N; j++) {
-      double pars_GH[4] = {-999, -999, -999, -999};
-      double epars_GH[4]= {-999, -999, -999, -999};
+      // double pars_GH[4] = {-999, -999, -999, -999};
+      // double epars_GH[4]= {-999, -999, -999, -999};
+      double pars_GH[4] = {0,0,0,0};
+      double epars_GH[4]= {0,0,0,0};
 
       if(n_entries[j][k]>0) {
 
@@ -567,6 +569,13 @@ int main(int argc, char * argv[]) {
         gr[j][k]->Fit(GH[j][k], options[j].c_str(),"", min_x[j][k],max_x[j][k]);
         //Loading parameters
         GH[j][k]->GetParameters(pars_GH);
+        if(j==8){
+          std::cout<<pars_GH[0]<<std::endl;
+          pars_GH[0] = 0.25;
+          pars_GH[1] = 700.;
+          pars_GH[2] = 350.;
+          pars_GH[3] = -500.;
+        }
         GH[j][k]->SetParameters(pars_GH);
         GH[j][k]->SetLineColor(1 + j);
         if(j==4) GH[j][k]->SetLineColor(kOrange+7);
