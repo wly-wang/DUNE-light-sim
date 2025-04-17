@@ -44,8 +44,8 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
   // 8" PMT radius
   double b = 8*2.54/2.;
   // Y-Z coordinates of the active volume center
-  const double centerYZ[2] = {300., 350.};
   //const double centerYZ[2] = {300., 350.};
+  const double centerYZ[2] = {0., 697.};
   //const double centerXZ[2] = {0., 1000.};
   //double x_anode = 324.97;//325.01;
   //double y_anode = 0;
@@ -301,18 +301,18 @@ int main(int argc, char * argv[]) {
 
   bool isDouble=true;
   //Center distance bins
-  double range_d = 500.; //400;
-
+  // double range_d = 500.; //400;
+  double range_d = 900.;
   // Modification requried from Users:
   const int M = 5;
   double range_d_array[M+1];
   if (!isDouble) {
-    //double range_d_array_temp[M+1] = {0.,200.,350.,500.,650.,range_d};
-    double range_d_array_temp[M+1] = {0.,100.,200.,250.,350.,range_d};
+    double range_d_array_temp[M+1] = {0.,200.,350.,500.,650.,range_d};
+    //double range_d_array_temp[M+1] = {0.,100.,200.,250.,350.,range_d};
     std::copy(std::begin(range_d_array_temp), std::end(range_d_array_temp), std::begin(range_d_array));
   }else {
-    //double range_d_array_temp[M+1] = {0.,200.,350.,500.,650.,range_d};
-    double range_d_array_temp[M+1] = {0.,100.,200.,250.,350.,range_d};
+    double range_d_array_temp[M+1] = {0.,200.,350.,500.,650.,range_d};
+    //double range_d_array_temp[M+1] = {0.,100.,200.,250.,350.,range_d};
     
     std::copy(std::begin(range_d_array_temp), std::end(range_d_array_temp), std::begin(range_d_array));
   }
@@ -556,10 +556,10 @@ int main(int argc, char * argv[]) {
 
 //Info in <ROOT::Math::ParameterSettings>: lower/upper bounds outside current parameter value. The value will be set to (low+up)/2
     for(int j=0; j < N; j++) {
-      // double pars_GH[4] = {-999, -999, -999, -999};
-      // double epars_GH[4]= {-999, -999, -999, -999};
-      double pars_GH[4] = {0,0,0,0};
-      double epars_GH[4]= {0,0,0,0};
+      double pars_GH[4] = {-999, -999, -999, -999};
+      double epars_GH[4]= {-999, -999, -999, -999};
+      // double pars_GH[4] = {0,0,0,0};
+      // double epars_GH[4]= {0,0,0,0};
 
       if(n_entries[j][k]>0) {
 
@@ -569,8 +569,33 @@ int main(int argc, char * argv[]) {
         gr[j][k]->Fit(GH[j][k], options[j].c_str(),"", min_x[j][k],max_x[j][k]);
         //Loading parameters
         GH[j][k]->GetParameters(pars_GH);
+        if(j==3){
+          pars_GH[0] = 0.87;
+          pars_GH[2] = 400.;
+          pars_GH[3] = -800.;
+        }
+        if(j==4){
+          pars_GH[0] = 0.81;
+          pars_GH[2] = 400.;
+          pars_GH[3] = -800.;
+        }
+        if(j==5){
+          pars_GH[0] = 0.69;
+          pars_GH[2] = 520.;
+        }
+        if(j==6){
+          pars_GH[0] = 0.56;
+          pars_GH[1] = 600.;
+          pars_GH[2] = 600.;
+          pars_GH[3] = -500.;
+        }
+        if(j==7){
+          pars_GH[0] = 0.38;
+          pars_GH[1] = 680.;
+          pars_GH[2] = 950.;
+          pars_GH[3] = -500.;
+        }
         if(j==8){
-          std::cout<<pars_GH[0]<<std::endl;
           pars_GH[0] = 0.25;
           pars_GH[1] = 700.;
           pars_GH[2] = 350.;
@@ -846,7 +871,7 @@ int main(int argc, char * argv[]) {
   gf[0]->GetYaxis()->SetLabelSize(0.05);
   gf[0]->GetYaxis()->SetTitleSize(0.06);
   gf[0]->GetYaxis()->SetTitleOffset(0.74);
-  gf[0]->GetYaxis()->SetRangeUser(0,2.);    // need to rewrite this
+  gf[0]->GetYaxis()->SetRangeUser(0,1.2);    // need to rewrite this
   gf[0]->GetXaxis()->SetRangeUser(0,range_d*1.05); // need to rewrite this to sset the range of border effect. 
   gf[0]->GetXaxis()->SetLabelSize(0.05);
   gf[0]->GetXaxis()->SetTitleSize(0.05);
@@ -883,7 +908,7 @@ int main(int argc, char * argv[]) {
   gf[1]->GetYaxis()->SetLabelSize(0.05);
   gf[1]->GetYaxis()->SetTitleSize(0.06);
   gf[1]->GetYaxis()->SetTitleOffset(0.74);
-  gf[1]->GetYaxis()->SetRangeUser(400.,800.);  // need to rewrite this
+  gf[1]->GetYaxis()->SetRangeUser(300.,750.);  // need to rewrite this
   gf[1]->GetXaxis()->SetRangeUser(0,range_d*1.05); // need to rewrite this to sset the range of border effect. 
   gf[1]->GetXaxis()->SetLabelSize(0.05);
   gf[1]->GetXaxis()->SetTitleSize(0.05);
@@ -920,7 +945,7 @@ int main(int argc, char * argv[]) {
   gf[2]->GetYaxis()->SetLabelSize(0.05);
   gf[2]->GetYaxis()->SetTitleSize(0.06);
   gf[2]->GetYaxis()->SetTitleOffset(0.74);
-  gf[2]->GetYaxis()->SetRangeUser(0,500.);  // need to rewrite this
+  gf[2]->GetYaxis()->SetRangeUser(300.,900.);  // need to rewrite this
   gf[2]->GetXaxis()->SetRangeUser(0,range_d*1.05); // need to rewrite this to sset the range of border effect.
   gf[2]->GetXaxis()->SetLabelSize(0.05);
   gf[2]->GetXaxis()->SetTitleSize(0.05);
