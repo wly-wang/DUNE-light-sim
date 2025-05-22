@@ -20,7 +20,7 @@ Relevant tutorial https://cdcvs.fnal.gov/redmine/projects/sbn-analysis-group/wik
 
 N.B.: Something to notice is that many names are named protoDUNE-XX, or lateral-xx, many of the names DOES NOT represent ANY specific geometry properties being hard-coded in, the names are just never changed for code consistency, each content and piece of output WILL be explained inside this doc.
 
-FOR ANY QUESTIONS REGARDING THE RUNNING OF THE CODE, please don't hesistate to email me: L. William Wang (L.Wang-121@sms.ed.ac.uk) (U. of Edinburgh), or message me on Slack.
+FOR ANY QUESTIONS REGARDING THE RUNNING OF THE CODE, please don't hesistate to email me: William L. Wang (L.Wang-121@sms.ed.ac.uk) (U. of Edinburgh), or message me on Slack.
 
 #---------------#
 # Custom DUNESW #
@@ -111,13 +111,24 @@ Two separate versions for the Fit part of the code: 1 for Argon-only and another
 -src/main.cpp:
 	- This is the main script for the fit part of the code
 	- Line 40: min_number_entries, set for the minimum value of a hit, this is mainly used when the number of generated photon per photon origin is not a large enough. 50-100 is about right, no need to tune unless analysis specific on requiring specific hit values. 
-	- Line 47: Self-explanatory, the center of the YZ plane coordinate of the detector. CRUCIAL PARAMETER TO CHANGE, DON'T FORGET!!
+	- Line 47: Self-explanatory, the center of the YZ plane coordinate of the detector. **CRUCIAL PARAMETER TO CHANGE, DON'T FORGET!!**
 	- Line 57: The absorption length, 20m for Argon, while it's 80m for xenon-doped argon. 
 	- Line 131: The commented out line in such format is a line of code that can be utilized (if needed) to look at only specific photon detector responses. As long as one understands fully the indexing and where the interested photon detectors are. 
 	- Line 285: Leave this to true unless modification made to photon detectors. This code is now adapted/optimized to run for mainly just DUNE, with the photon detector type being always set to X-ARAPUCAs. The same code is also utilized by SBND, for example, but adding in a bunch of conditions confuses the user and is best to strictly just look at DUNE-related geometries. 
 	- Line 288: Number of offset angled bin, used to look at the angled space-points coming to the photon detector, i.e. 0 deg means directly seen by the photon detector, hitting straight on, while 90 deg means it's hitting on the side perpendicular to the photon detector. 
 	- Line 297-321: This snippet of code is very crucial to this part of the code.
-		Line 298-299: These sets the range of the distance d to the photon detector. 
-		Line 
+		Line 298-299: These sets the range of the distance d to the photon detector.
+		Line 304: the ```range_d``` variable is the upper bound (furthest) value of the distance to the photon detector on the photon detector plane. 
+		Line 307: This is how many regions that you want to isolate, and setting how many "distance to center xx cm" plots\dots
+		Line 311: This is the border values you want to choose for the regions from line 307. 
+		Line 309 & 314: This is just two cases, whether the Photon detectors (arapucas) are double-sided or not. 
+	- Line 337: setting/creating TH1 for the GH curve plot: N is the number of offset-angle theta binning, and M being the number of GH plot we plot based on the number of regions set in the distance to center of YZ (photon detector) plane. 
+	- Line 348-406: Initialization of GH parameters, also setting the important 4th GH parameter, which in most cases needs to be manually tuned if the GH fit look a bit off. 
+		- Line 348: Initial guess value of the GH parameters. 
+		- Line 357-363: Manual setting of the GH 4th parameter based on different angled bin. 
+	- Line 542-555: Customizing the GH fit plots
+		- Line 551: the real important one, setting the range in x, since this value will change based on the geometry used. 
+	- Line 558-595: This part of the code is for fitting the simulated data, utilizing ROOT Fitter. In the ```./fit_xe``` version, this part will be different as the fitter doesn't seem to work as well on the xenon, so there are signs of manually fitting some of the offset angled bins. 
+	
 
 
