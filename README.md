@@ -108,7 +108,7 @@ Two separate versions for the Fit part of the code: 1 for Argon-only and another
 	- This script obtains and creates a list of optical detectors in the geometry and their coordinate, information obtained from the LArSoft output log that is stored at "/generate/processXX/log". 
 	- THIS IS THE FIRST THING TO RUN DURING THE FIT STEP. 
 
--src/main.cpp:
+- src/main.cpp:
 	- This is the main script for the fit part of the code
 	- Line 40: min_number_entries, set for the minimum value of a hit, this is mainly used when the number of generated photon per photon origin is not a large enough. 50-100 is about right, no need to tune unless analysis specific on requiring specific hit values. 
 	- Line 47: Self-explanatory, the center of the YZ plane coordinate of the detector. **CRUCIAL PARAMETER TO CHANGE, DON'T FORGET!!**
