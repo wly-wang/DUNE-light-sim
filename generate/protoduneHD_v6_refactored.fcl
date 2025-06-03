@@ -30,13 +30,18 @@ services:
 #services.NuRandomService.masterSeed: 1234 # for testing
 
 # Set the geometry version
-services.Geometry.GDML: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2.gdml"
-services.Geometry.ROOT: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2.gdml"
-#services.Geometry.SortingParameters.DetectorVersion: "dune10kt_v6"
-services.Geometry.Name: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2"
-services.LArG4Detector.gdmlFileName_: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2.gdml"
-services.AuxDetGeometry.GDML: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2.gdml"
-services.AuxDetGeometry.Name: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2"
+# services.Geometry.GDML: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2.gdml"
+# services.Geometry.ROOT: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2.gdml"
+# services.Geometry.SortingParameters.DetectorVersion: "dune10kt_v6"
+# services.Geometry.Name: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2"
+# services.LArG4Detector.gdmlFileName_: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2.gdml"
+# services.AuxDetGeometry.GDML: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2.gdml"
+# services.AuxDetGeometry.Name: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2"
+
+services.Geometry.GDML: "dune10kt_v6_refactored_1x2x6.gdml"
+services.Geometry.ROOT: "dune10kt_v6_refactored_1x2x6.gdml"
+services.Geometry.SortingParameters.DetectorVersion: "dune10kt_v6"
+services.Geometry.Name: "dune10kt_v6_refactored_1x2x6"
 
 # services changes.
 services.NuRandomService.policy: "random"
@@ -79,26 +84,15 @@ physics:
 
  analyzers:
  {
-   # pmtresponse: @local::dunefd_simphotoncounter    # defined in opticaldetectormodules_dune.fcl
-
-   XAresponse: # XArapuca response
-   {
-     module_type:             "SimPhotonCounter"
-     Verbosity:               1  # 1: output less on terminal---
-     InputModule:             "largeant"
-     MakeAllPhotonsTree:      true
-     MakeDetectedPhotonsTree: true
-     MakeOpDetsTree:          true
-     MakeOpDetEventsTree:     true
-   }
+   pmtresponse: @local::dunefd_simphotoncounter    # defined in opticaldetectormodules_dune.fcl
  }
 
  #define the producer and filter modules for this path, order matters,
  #filters reject all following items.  see lines starting physics.producers below
  simulate: [ generator, largeant ]
- analyzeIt:  [ XAresponse ]
+ analyzeIt:  [ pmtresponse ]
  #define the output stream, there could be more than one if using filters
- stream1:  [ out1 ]
+ stream1:  [ ]
 
  #trigger_paths is a keyword and contains the paths that modify the art::event,
  #ie filters and producers
@@ -129,14 +123,14 @@ physics.producers.generator.FillTree: false # for efficiency
 
 
 ##### Parameter changes for the pmt respnse analyzer (simphotoncounter) #####
-#physics.analyzers.pmtresponse.SavePhotonOrigins: true
-#physics.analyzers.pmtresponse.MakeAllPhotonsTree: true
-#physics.analyzers.pmtresponse.MakeDetectedPhotonsTree: false
-#physics.analyzers.pmtresponse.MakeOpDetsTree: false
-#physics.analyzers.pmtresponse.MakeOpDetEventsTree: false
+physics.analyzers.pmtresponse.SavePhotonOrigins: true
+physics.analyzers.pmtresponse.MakeAllPhotonsTree: true
+physics.analyzers.pmtresponse.MakeDetectedPhotonsTree: false
+physics.analyzers.pmtresponse.MakeOpDetsTree: false
+physics.analyzers.pmtresponse.MakeOpDetEventsTree: false
 
-# services.OpDetResponseInterface.ChannelConversion: "fast"
-services.OpDetResponseInterface.ChannelConversion: "none"
+services.OpDetResponseInterface.ChannelConversion: "fast"
+#services.OpDetResponseInterface.ChannelConversion: "none"
 services.OpDetResponseInterface.LambdaShort:                4.3  # cm
 services.OpDetResponseInterface.LambdaLong:               225.0  # cm
 services.OpDetResponseInterface.FracShort:                 0.29
