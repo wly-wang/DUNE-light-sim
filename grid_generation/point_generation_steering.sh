@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ------------ CONFIGURABLE VARIABLES ------------
-number_of_process=1  # <-- Change this as needed
+number_of_process=3  # <-- Change this as needed
 # ------------------------------------------------
 
 #------------------------------------------------------------
@@ -21,7 +21,8 @@ z_=( 732.289 )
 
 # Compute total number of points
 total_points=$(( ${#x_[@]} * ${#y_[@]} * ${#z_[@]} ))
-points_per_file=$(( (total_points + number_of_process - 1) / number_of_process ))  # ceil division
+points_per_file=$(( (total_points + number_of_process - 1) / number_of_process ))  # optimization to distribute points evenly, depending on number of jobs/processes.
+#------------------------------------------------------------
 
 # Initialize counters
 count=0

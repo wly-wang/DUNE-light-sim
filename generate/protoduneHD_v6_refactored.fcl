@@ -26,22 +26,25 @@ services:
   @table::dunefd_simulation_services
   @table::dunefd_1x2x6_simulation_services
   @table::dunefd_photolibbuild_services
+  # BackTrackerService:   @local::dune35t_backtrackerservice # defined in backtrackerservice.fcl
+  # ParticleInventoryService:   @local::dune35t_particleinventoryservice # defined in backtrackerservice.fcl
 }
 #services.NuRandomService.masterSeed: 1234 # for testing
 
 # Set the geometry version
-# services.Geometry.GDML: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2.gdml"
-# services.Geometry.ROOT: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2.gdml"
+services.Geometry.GDML: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2.gdml"
+services.Geometry.ROOT: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2.gdml"
 # services.Geometry.SortingParameters.DetectorVersion: "dune10kt_v6"
-# services.Geometry.Name: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2"
-# services.LArG4Detector.gdmlFileName_: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2.gdml"
-# services.AuxDetGeometry.GDML: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2.gdml"
-# services.AuxDetGeometry.Name: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2"
+services.Geometry.Name: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2"
+services.LArG4Detector.gdmlFileName_: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2.gdml"
+services.AuxDetGeometry.GDML: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2.gdml"
+services.AuxDetGeometry.Name: "dune10kt_v6_refactored_1x2x6_modded_dbDrift_cpaPDS_singleVol_v2"
 
-services.Geometry.GDML: "dune10kt_v6_refactored_1x2x6.gdml"
-services.Geometry.ROOT: "dune10kt_v6_refactored_1x2x6.gdml"
-services.Geometry.SortingParameters.DetectorVersion: "dune10kt_v6"
-services.Geometry.Name: "dune10kt_v6_refactored_1x2x6"
+# services.Geometry.GDML: "dune10kt_v6_refactored_1x2x6.gdml"
+# services.Geometry.ROOT: "dune10kt_v6_refactored_1x2x6.gdml"
+# services.Geometry.SortingParameters.DetectorVersion: "dune10kt_v6_refactored"
+# services.Geometry.Name: "dune10kt_v6_refactored_1x2x6"
+# services.LArG4Detector.gdmlFileName_: "dune10kt_v6_refactored_1x2x6.gdml"
 
 # services changes.
 services.NuRandomService.policy: "random"
@@ -161,25 +164,25 @@ services.OpDetResponseInterface.LightGuideAttenuation: false
 
 
 #setting the optical properties of the materials in the geometry:
-services.LArPropertiesService.ReflectiveSurfaceEnergies:         [ 1.77, 2.0675, 2.481, 2.819, 2.953, 3.1807, 3.54, 4.135, 4.962, 5.39, 7., 15. ]
-# services.LArPropertiesService.ReflectiveSurfaceEnergies:         [ 1.77, 2.0675, 2.481, 2.819, 2.953, 3.1807, 3.54, 4.135, 4.962, 5.39, 6.70, 7.09, 7.51, 9., 9.69, 10.51 ]
+#services.LArPropertiesService.ReflectiveSurfaceEnergies:         [ 1.77, 2.0675, 2.481, 2.819, 2.953, 3.1807, 3.54, 4.135, 4.962, 5.39, 7., 15. ]
+services.LArPropertiesService.ReflectiveSurfaceEnergies:         [ 1.77, 2.0675, 2.481, 2.819, 2.953, 3.1807, 3.54, 4.135, 4.962, 5.39, 6.70, 7.09, 7.51, 9., 9.69, 10.51 ]
 # 6.70, 7.09, 7.51 is xenon region, 9., 9.69, 10.51 is argon region.
 
 ##### Added material names and reflectances
 services.LArPropertiesService.ReflectiveSurfaceNames:   [ "STEEL_STAINLESS_Fe7Cr2Ni", "Copper_Beryllium_alloy25", "G10", "vm2000", "ALUMINUM_Al" ]
-# services.LArPropertiesService.ReflectiveSurfaceReflectances: [ [0.66, 0.64, 0.62, 0.60, 0.59, 0.57, 0.53, 0.47, 0.39, 0.36,
-#                                                               0.40, 0.40, 0.40, 0.30, 0.30, 0.30],
-#                                                               [ 0.902, 0.841, 0.464, 0.379, 0.345, 0.299, 0.287, 0.264, 0.337, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
-#                                                               [ 0.393, 0.405, 0.404, 0.352, 0.323, 0.243, 0.127, 0.065, 0.068, 0.068, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
-#                                                               [ 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25,
-#                                                               0.12, 0.12, 0.12, 0.06, 0.06, 0.06 ],
-#                                                               [ 0.66, 0.64, 0.62, 0.60, 0.59, 0.57, 0.53, 0.47, 0.39, 0.36,
-#                                                               0.70, 0.70, 0.70, 0.70, 0.70, 0.70] ]
-services.LArPropertiesService.ReflectiveSurfaceReflectances:     [ [ 0.66, 0.64, 0.62, 0.60, 0.59, 0.57, 0.53, 0.47, 0.39, 0.36, 0.27, 0.25 ],
-                                                       [ 0.902, 0.841, 0.464, 0.379, 0.345, 0.299, 0.287, 0.264, 0.337, 0.3, 0.0, 0.0 ],
-                                                       [ 0.393, 0.405, 0.404, 0.352, 0.323, 0.243, 0.127, 0.065, 0.068, 0.068, 0.0, 0.0 ],
-                                                       [ 0.93, 0.93, 0.93, 0.93, 0.93, 0.93, 0.1, 0.1, 0.7, 0.3, 0.0, 0.0 ],
-                                                       [ 0.66, 0.64, 0.62, 0.60, 0.59, 0.57, 0.53, 0.47, 0.39, 0.36, 0.27, 0.25 ] ]
+services.LArPropertiesService.ReflectiveSurfaceReflectances: [ [0.66, 0.64, 0.62, 0.60, 0.59, 0.57, 0.53, 0.47, 0.39, 0.36,
+                                                               0.40, 0.40, 0.40, 0.30, 0.30, 0.30],
+                                                               [ 0.902, 0.841, 0.464, 0.379, 0.345, 0.299, 0.287, 0.264, 0.337, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],                                                               
+                                                               [ 0.393, 0.405, 0.404, 0.352, 0.323, 0.243, 0.127, 0.065, 0.068, 0.068, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
+                                                               [ 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25,
+                                                               0.12, 0.12, 0.12, 0.06, 0.06, 0.06 ],
+                                                               [ 0.66, 0.64, 0.62, 0.60, 0.59, 0.57, 0.53, 0.47, 0.39, 0.36,
+                                                               0.70, 0.70, 0.70, 0.70, 0.70, 0.70] ]
+# services.LArPropertiesService.ReflectiveSurfaceReflectances:     [ [ 0.66, 0.64, 0.62, 0.60, 0.59, 0.57, 0.53, 0.47, 0.39, 0.36, 0.27, 0.25 ],
+#                                                       [ 0.902, 0.841, 0.464, 0.379, 0.345, 0.299, 0.287, 0.264, 0.337, 0.3, 0.0, 0.0 ],
+#                                                       [ 0.393, 0.405, 0.404, 0.352, 0.323, 0.243, 0.127, 0.065, 0.068, 0.068, 0.0, 0.0 ],
+#                                                       [ 0.93, 0.93, 0.93, 0.93, 0.93, 0.93, 0.1, 0.1, 0.7, 0.3, 0.0, 0.0 ],
+#                                                       [ 0.66, 0.64, 0.62, 0.60, 0.59, 0.57, 0.53, 0.47, 0.39, 0.36, 0.27, 0.25 ] ]
 
 # Rayleigh scattering length, 99.9cm @ 128nm
 # Argon energy: 9.68750 @ 128nm
@@ -207,3 +210,4 @@ services.LArPropertiesService.ReflectiveSurfaceDiffuseFractions: [
 # changing the absorption length for xenon to be 80m.
 # services.LArPropertiesService.AbsLengthEnergies: [4,5,6,6.5,7,7.5,8,9,10,11]
 # services.LArPropertiesService.AbsLengthSpectrum: [2000,2000,2000,8000,8000,8000,2000,2000,2000,2000]
+

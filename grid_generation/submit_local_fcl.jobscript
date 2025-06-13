@@ -27,82 +27,60 @@ if [ "$NUM_EVENTS" != "" ] ; then
  events_option="-n $NUM_EVENTS"
 fi
 
-# First get an unprocessed file from this stage
-did_pfn_rse=`$JUSTIN_PATH/justin-get-file`
+# # First get an unprocessed file from this stage
+# did_pfn_rse=`$JUSTIN_PATH/justin-get-file`
 
-if [ "$did_pfn_rse" = "" ] ; then
-  echo "Nothing to process - exit jobscript"
-  exit 0
-fi
+# if [ "$did_pfn_rse" = "" ] ; then
+#   echo "Nothing to process - exit jobscript"
+#   exit 0
+# fi
 
-# Keep a record of all input DIDs, for pdjson2meta file -> DID mapping
-echo "$did_pfn_rse" | cut -f1 -d' ' >>all-input-dids.txt
+# # Keep a record of all input DIDs, for pdjson2meta file -> DID mapping
+# echo "$did_pfn_rse" | cut -f1 -d' ' >>all-input-dids.txt
 
-# pfn is also needed when creating justin-processed-pfns.txt
-pfn=`echo $did_pfn_rse | cut -f2 -d' '`
-echo "Input PFN = $pfn"
+# # pfn is also needed when creating justin-processed-pfns.txt
+# pfn=`echo $did_pfn_rse | cut -f2 -d' '`
+# echo "Input PFN = $pfn"
 
 # Setup DUNE environment
 source /cvmfs/dune.opensciencegrid.org/products/dune/setup_dune.sh
 setup dunesw "$DUNE_VERSION" -q "$DUNE_QUALIFIER"
+source $INPUT_TAR_DIR_LOCAL/dune_light_sim_v10_03_01d02/localProducts_larsoft_v10_03_01d02_e26_prof/setup
+mrbslp
 
 # Construct outFile from input $pfn 
-now=$(date -d '-20 day' -u +"%Y-%m-%dT_%H%M%SZ")
-Ffname=`echo $pfn | awk -F/ '{print $NF}'`
-fname=`echo $Ffname | awk -F. '{print $1}'`
-outFile=${fname}_reco_${now}.root
+now=$(date -u +"%Y-%m-%dT_%H%M%SZ")
+# Ffname=`echo $pfn | awk -F/ '{print $NF}'`
+# fname=`echo $Ffname | awk -F. '{print $1}'`
+outFile=${now}_reco_${now}.root
 
 campaign="justIN.w${JUSTIN_WORKFLOW_ID}s${JUSTIN_STAGE_ID}"
 
-# Here is where the LArSoft command is called
-for input_file in myLightSourceSteering_*.txt; do
-  # Check if no files left
-  [ -e "$input_file" ] || break
+(
+# Do the scary preload stuff in a subshell!
+export LD_PRELOAD=${XROOTD_LIB}/libXrdPosixPreload.so
+echo "$LD_PRELOAD"
 
-  echo "Processing $input_file..."
-  
-  # Rename to standard input name that's expected by FCL
-  cp "$input_file" myLightSourceSteering.txt
+lar -c $FCL_FILE $events_option -o $outFile > ${now}_reco_${now}.log 2>&1
+)
 
-  # Run lar with current renamed input
-  (
-    export LD_PRELOAD=${XROOTD_LIB}/libXrdPosixPreload.so
-    echo "$LD_PRELOAD"
+echo '=== Start last 100 lines of lar log file ==='
+tail -100 ${now}_reco_${now}.log
+echo '=== End last 100 lines of lar log file ==='
 
-    lar -c $FCL_FILE $events_option -o "${fname}_reco_${now}_${input_file}.root" "$pfn" \
-      > "${fname}_reco_${now}_${input_file}.log" 2>&1
-  )
+# Subshell exits with exit code of last command
+larExit=$?
+echo "lar exit code $larExit"
+echo $now
 
-  larExit=$?
-  echo "lar exit code $larExit"
-
-  if [ $larExit -eq 0 ]; then
-    echo "$pfn" >> justin-processed-pfns.txt
-  else
-    # Oh :(
-    jobscriptExit=1
-    echo "!!! Failed to process $input_file !!!"
-  fi
-
-done
-
-
-# echo '=== Start last 100 lines of lar log file ==='
-# tail -100 ${fname}_reco_${now}.log
-# echo '=== End last 100 lines of lar log file ==='
-
-# # Subshell exits with exit code of last command
-# larExit=$?
-# echo "lar exit code $larExit"
-
-# if [ $larExit -eq 0 ] ; then
-#   # Success !
-#   echo "$pfn" > justin-processed-pfns.txt
-#   jobscriptExit=0
-# else
-#   # Oh :(
-#   jobscriptExit=1
-# fi
+if [ $larExit -eq 0 ] ; then
+  # Success !
+  echo This job is done with output file $outFile created at $now
+  jobscriptExit=0
+else
+  # Oh :(
+  jobscriptExit=1
+fi
 
 # Create compressed tar file with all log files 
 tar zcf `echo "$JUSTIN_JOBSUB_ID.logs.tgz" | sed 's/@/_/g'` *.log

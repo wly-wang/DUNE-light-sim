@@ -4,7 +4,7 @@ cd /exp/dune/app/users/wwang/
 
 tar cvf to_grid.tar to_grid
 
-source /cvmfs/dune.opensciencegrid.org/products/dune/setup_dune.sh
+source ./setup/dune_light_sim_v10_03_01d02_setup.sh
 setup python v3_9_15
 setup justin
 justin get-token
@@ -66,9 +66,9 @@ else
 fi
 
 endhr=$(( $roundhour + 12 ))
-begin="$(date -d '-60 day' -u +"%Y-%m-%d")T${roundhour}00"
-end="$(date -d '-60 day' -u +"%Y-%m-%d")T${endhr}00"
-endfind="$(date -d '-62 day' -u +"%Y%m%d")"
+begin="$(date -u +"%Y-%m-%d")T${roundhour}00"
+end="$(date -u +"%Y-%m-%d")T${endhr}00"
+endfind="$(date -u +"%Y%m%d")"
 
 echo now: $(date)
 echo begin: $begin
@@ -77,7 +77,7 @@ echo endfind: $endfind
 
 # query="files where created_timestamp >= ${begin} and created_timestamp < ${end} and core.file_type=detector and core.run_type=hd-protodune and core.data_tier=raw skip 80 ordered"
 
-desc="1x2x6 semi-ana light sim Edinburgh (${begin} -- ${end})"
+desc="1x2x6 semi-ana light sim Edinburgh (${begin})"
 scope="usertests"
 maxwall="$((3600*5))"
 recopattern="*_reco_*.root:$FNALURL/$USERF"
@@ -95,26 +95,29 @@ echo "Found in cvmfs"
 
 #justin-test-jobscript --mql "$query" --jobscript $jobscript --env INPUT_TAR_DIR_LOCAL="$INPUT_TAR_DIR_LOCAL"
 
+# go back to the original directory
+cd ./light_generation/
+
 echo
 echo "Will execute"
 echo justin simple-workflow --monte-carlo 1 \
---jobscript $jobscript --rss-mb $rssmb --max-distance 30 --scope "usertests" \
+--jobscript "submit_local_fcl.jobscript" --rss-mb $rssmb --max-distance 30 --scope $scope \
 --description "$desc" \
 --refind-end-date $endfind \
 --output-pattern $recopattern \
 --env INPUT_TAR_DIR_LOCAL="$INPUT_TAR_DIR_LOCAL" \
---env NUM_EVENTS=300 \
+--env NUM_EVENTS=100 \
 --refind-interval-hours 1 --wall-seconds $maxwall \
 --lifetime-days 90
 
 
-justin simple-workflow --mql "$query" \
---jobscript $jobscript --rss-mb $rssmb --max-distance 30 --scope $scope \
---description "Light Simulation Edinburgh" \
+justin simple-workflow --monte-carlo 1 \
+--jobscript "submit_local_fcl.jobscript" --rss-mb $rssmb --max-distance 30 --scope $scope \
+--description "$desc" \
 --refind-end-date $endfind \
 --output-pattern $recopattern \
 --env INPUT_TAR_DIR_LOCAL="$INPUT_TAR_DIR_LOCAL" \
---env NUM_EVENTS=300 \
+--env NUM_EVENTS=100 \
 --refind-interval-hours 1 --wall-seconds $maxwall \
 --lifetime-days 90
 
