@@ -155,6 +155,11 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
       
       if(entries < min_number_entries) continue;
 
+      if (numberDevices > devx.size()) {
+        std::cerr << "ERROR: numberDevices > number of detector positions!" << std::endl;
+        continue;
+      }
+
       double distance_to_pmt = sqrt(pow(posSource[0] - devx.at(i),2) +
                                     pow(posSource[1] - devy.at(i),2) +
                                     pow(posSource[2] - devz.at(i),2));
@@ -296,7 +301,7 @@ int main(int argc, char * argv[]) {
 
   //Distance range and step for the profile to fit with GH
   double d_min = 0;
-  double d_max = 1000.; // changable 1400 - argon; 2000 -xenon
+  double d_max = 2000.; // changable 1400 - argon; 2000 -xenon
   double step_d = 50;
 
   bool isDouble=true;
