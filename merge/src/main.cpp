@@ -21,6 +21,7 @@ int main( int argc, char * argv[] )
   //std::string lista_files = "./List_of_Grid_files.txt";
   std::string lista_files = argv[1];
   int numberDevices = CHANNEL_NUMBER; // this is the number of lines in the optical map
+  //int numberDevices = 480; 
   int genPhotons = 100000;
 
   // Structures to collect data
@@ -28,6 +29,8 @@ int main( int argc, char * argv[] )
   {
     int VUV_hits[CHANNEL_NUMBER];
     int Vis_hits[CHANNEL_NUMBER];
+    // int VUV_hits[480]; // CHANNEL_NUMBER is 480 for 1x2x6
+    // int Vis_hits[480]; // CHANNEL_NUMBER is 480 for 1x2x6
     double Wavelength;
     int GenPhotons;
     int NumberDevices;

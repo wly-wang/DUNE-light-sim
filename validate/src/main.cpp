@@ -93,6 +93,8 @@ const double x_foils = 360.279; const double y_foils = 0; const double z_foils =
 const double L_abs = 2000;
 const double pi = 3.1416;
 
+// special case: VerticalBorderCorrectionMode use Y direction only
+bool fVerticalBorderCorrectionMode = true;
 
 // VUV Gaisser-Hillas parameters
 // DUNE flat surface (for cathode)
@@ -101,15 +103,14 @@ const double pi = 3.1416;
   // Argon, RS = 99.9cm, flat PDs (Arapucas/Supercells)
   const std::vector<double> angulo = {5, 15, 25, 35, 45, 55, 65, 75, 85};
   // for DUNE FD1 HD 1x2x6 modded geometry (CPA side PDs)
-  const double fGHVUVPars[4][9] = { {0.943315, 0.927403, 0.889957, 0.819617, 0.736096, 0.634532, 0.525174, 0.399049, 0.304082},
-                                    {147.11, 152.598, 150.941, 151.62, 161.996, 178.224, 185.384, 176.883, 142.38},
-                                    {60.8305, 92.4303, 153.021, 174.507, 248.714, 271.208, 299.77, 312.834, 313.576},
-                                    {-1800, -1000, -500, -500, -250, -200, -150, -150, -50}};
+  const double fGHVUVPars[4][9] = { {0.945864, 0.969032, 0.921238, 0.85528, 0.771199, 0.686293, 0.586925, 0.474707, 0.398463},
+                                    {120.599, 127.086, 139.682, 154.092, 176.033, 197.589, 215.467, 249.152, 223.171},
+                                    {10, 14.0039, 13.8508, 14.8096, 16.4604, 46.8528, 89.5459, 84.3506, 137.663},
+                                    {-5000, -3000, -3000, -3000, -3000, -1000, -500, -500, -100}};
 
-                                    //{-275, -250, -200, -200, -150, -100, -75, -75, -50}
-  const std::vector<double> slopes1 = {0.000459792, 0.000446005, 0.000414313, 0.00037199, 0.000337897, 0.000292272, 0.00024207, 0.0001858, 0.000141983};
-  const std::vector<double> slopes2 = {0.0695762, 0.058056, 0.0619223, 0.0719281, 0.0510567, 0.0370771, 0.0317449, 0.021044, 0.0352632};
-  const std::vector<double> slopes3 = {-0.0263847, -0.0316618, -0.0539169, -0.0753959, -0.103497, -0.11702, -0.139408, -0.138592, -0.129202};
+  const std::vector<double> slopes1 = {0.000630574, 0.000542235, 0.000550712, 0.000528452, 0.000482608, 0.000419775, 0.000379044, 0.000312264, 0.000158984};
+  const std::vector<double> slopes2 = {0.00509646, 0.0520671, 0.0458954, 0.0391344, 0.0245683, 0.014537, 0.00252238, -0.0120217, 0.0212429};
+  const std::vector<double> slopes3 = {6.67433e-09, -0.0043685, -0.00422316, -0.00423609, -0.00361444, -0.0094362, -0.0255385, -0.0178526, -0.0404522};
   // double_sided
   const double fGHVUVPars_double_sided[4][9] = { {0.96311, 0.941925, 0.901074, 0.827969, 0.74171, 0.639441, 0.529001, 0.401473, 0.3031},
                                     {146.011, 149.516, 148.276, 148.898, 158.811, 171.994, 177.966, 171.344, 129.448},
@@ -169,14 +170,14 @@ const double pi = 3.1416;
   */
 
   // dome GH
-  const double fGHVUVPars_dome[4][9] = { {0.96311, 0.941925, 0.901074, 0.827969, 0.74171, 0.639441, 0.529001, 0.401473, 0.3031},
-                                    {146.011, 149.516, 148.276, 148.898, 158.811, 171.994, 177.966, 171.344, 129.448},
-                                    {190.428, 193.476, 226.5, 259.491, 293.266, 329.594, 353.936, 368.606, 363.766},
+  const double fGHVUVPars_dome[4][9] = { {0.945972, 0.969156, 0.921362, 0.855397, 0.771302, 0.686224, 0.584061, 0.46064, 0.383983},
+                                    {120.609, 127.099, 139.69, 154.096, 176.034, 197.019, 213.763, 251.01, 224.848},
+                                    {10, 14.0025, 13.8497, 14.8087, 16.4599, 47.3208, 92.947, 106.16, 180.046},
                                     {-400, -350, -300, -300, -250, -150, -100, -100, -50}};
   const std::vector<double> angulo_dome = {5, 15, 25, 35, 45, 55, 65, 75, 85};
-  const std::vector<double> slopes1_dome = {0.000477157, 0.00046539, 0.000426561, 0.000380635, 0.000341355, 0.000297682, 0.000245961, 0.000189099, 0.000139638};
-  const std::vector<double> slopes2_dome = {0.0550501, 0.0493876, 0.0538689, 0.0617787, 0.0477559, 0.032564, 0.0286264, 0.0184602, 0.0453299};
-  const std::vector<double> slopes3_dome = {-0.0745289, -0.0629413, -0.0754967, -0.104142, -0.117681, -0.135749, -0.158582, -0.157273, -0.167454};
+  const std::vector<double> slopes1_dome = {0.000630064, 0.000541727, 0.0005502, 0.000527966, 0.000482173, 0.000416671, 0.000370279, 0.000305641, 0.00015091};
+  const std::vector<double> slopes2_dome = {0.0050739, 0.0520175, 0.0458569, 0.0391073, 0.0245554, 0.0153167, 0.00398912, -0.0145567, 0.0278785};
+  const std::vector<double> slopes3_dome = {6.71829e-09, -0.00436349, -0.00421888, -0.0042324, -0.0036118, -0.00946102, -0.0233018, -0.0300258, -0.0629809};
 
 
 
@@ -392,6 +393,14 @@ int main(int argc, char * argv[]){
   std::vector<double> v_r; v_r.reserve(1e6);
   std::vector<double> v_prop_dist; v_prop_dist.reserve(1e6);
 
+  // Debug stats for distance 800–1000 cm
+  int   nPairs_800_1000        = 0;   // total pairs in that distance band
+  int   nPairs_below50_800_1000 = 0;  // how many of those had VUV_hits < 50
+
+  double sum_hits_800_1000      = 0.0; // sum of VUV_hits for avg calc
+  double sum_hits_below50_800_1000 = 0.0; // sum of VUV_hits for the ones < 50
+
+
   // open file
   TFile* f = new TFile(inputfilename.c_str());
   TTree *tree = (TTree *)f->Get("myTree");
@@ -409,7 +418,7 @@ int main(int argc, char * argv[]){
   tree->SetBranchAddress("genPhotons", &genPhotons);
 
   // loop through TTree
-  TH2F* h_truePE_vs_predPE = new TH2F("h_truePE_vs_predPE", "", 50, 0, 3e6, 50, 0, 3e6);
+  TH2F* h_truePE_vs_predPE = new TH2F("h_truePE_vs_predPE", "", 50, 0, 3.5e6, 50, 0, 3.5e6);
   for(int n=0; n < tree->GetEntries(); n++) {
 
     tree->GetEntry(n);
@@ -481,7 +490,21 @@ int main(int argc, char * argv[]){
       double nPhotons_solid = VUVHits(genPhotons,ScintPoint,OpDetPoint,OpDetType,cosine,theta,distance,j);
       double distance_vuv = sqrt(pow(ScintPoint[0] - OpDetPoint[0],2) + pow(ScintPoint[1] - OpDetPoint[1],2) + pow(ScintPoint[2] - OpDetPoint[2],2));
 
-      if (VUV_hits[pmt_index] < 50) continue;
+      // --- distance band study: 800-1000 cm ---
+      bool inFarBin = (distance >= 800 && distance < 1000);
+      if (inFarBin) {
+          nPairs_800_1000++;
+
+          // accumulate total hits for averaging
+          sum_hits_800_1000 += VUV_hits[pmt_index];
+
+          if (VUV_hits[pmt_index] < 50) {
+              nPairs_below50_800_1000++;
+              sum_hits_below50_800_1000 += VUV_hits[pmt_index];
+          }
+      }
+
+      if (VUV_hits[pmt_index] < 100) continue;
 
       //if (j!=1) continue;
       total_pe_truth += VUV_hits[nPMT];
@@ -518,6 +541,26 @@ int main(int argc, char * argv[]){
     h_truePE_vs_predPE->Fill(total_pe_truth, total_pe_prediction);
   } // end of loop over points
 
+  std::cout << "\n=== 800–1000 cm distance band stats ===" << std::endl;
+  std::cout << "Total pairs in band: " << nPairs_800_1000 << std::endl;
+  std::cout << "Pairs with VUV_hits < 100: " << nPairs_below50_800_1000 << std::endl;
+
+  if (nPairs_800_1000 > 0) {
+      double avg_hits_all = sum_hits_800_1000 / nPairs_800_1000;
+      std::cout << "Average VUV_hits over ALL pairs in band: " << avg_hits_all << std::endl;
+  } else {
+      std::cout << "Average VUV_hits over ALL pairs in band: n/a" << std::endl;
+  }
+
+  if (nPairs_below50_800_1000 > 0) {
+      double avg_hits_below50 = sum_hits_below50_800_1000 / nPairs_below50_800_1000;
+      std::cout << "Average VUV_hits for the <50 group: " << avg_hits_below50 << std::endl;
+  } else {
+      std::cout << "Average VUV_hits for the <50 group: n/a" << std::endl;
+  }
+  std::cout << "========================================" << std::endl;
+
+
   // Validation plots!
   //TString save_dir = "./validation_plots/";
   //gSystem->Exec("mkdir -p " + save_dir);
@@ -526,7 +569,7 @@ int main(int argc, char * argv[]){
 
   //TString type = "lateral"; //cathode lateral
   double chosen_x = 946;
-  auto line1 = new TLine(0,0,3e6, 3e6);
+  auto line1 = new TLine(0,0,3.5e6, 3.5e6);
   gPad->SetLogz();
   h_truePE_vs_predPE->Draw("colz");
   line1->SetLineColor(kRed);
@@ -545,39 +588,68 @@ int main(int argc, char * argv[]){
   //int bin_min = 0;
   //int bin_max = 365;
 
-  int n_bins = 20;
-  int bin_min = 0;
-  int bin_max = 1000;
+  // int n_bins = 20;
+  // int bin_min = 0;
+  // int bin_max = 1000;
+  // double binsize = (bin_max-bin_min)/n_bins;
+  // TProfile* profile = new TProfile("","", n_bins, bin_min, bin_max, "s");
 
-  double binsize = (bin_max-bin_min)/n_bins;
-  TProfile* profile = new TProfile("","", n_bins, bin_min, bin_max, "s");
+  // Variable bin edges (wider in the tail)
+
+  const double VALID_MAX = 1000.0; //hard cap for validation calculation
+
+  const Double_t edges[] = {
+    0,   60, 120, 180, 240, 300,
+    360, 420, 480, 540, 600, // 10 bins up to 600
+    800, 1000                // 2 more bins → total 12
+  };
+  const int n_bins = sizeof(edges)/sizeof(edges[0]) - 1;
+
+
+  // Create profile with variable bins
+  TProfile* profile = new TProfile("","", n_bins, edges, "s");
 
   // populate profile
   for(int i=0; i < v_prop_dist.size(); i++) {
+    if (v_prop_dist[i] > VALID_MAX) continue;
     double discrepancy = (v_hits_geo[i] - v_hits_sim[i]) / v_hits_sim[i];
     double weight = v_hits_sim[i];
     profile->Fill(v_prop_dist[i],discrepancy, weight);
     //profile->Fill(v_r[i],discrepancy, weight);
   }
 
+  // another profile for points that has d_T <= 600cm
+  const double DT_CUTOFF = 600.0; // cm
+
+  TProfile* profile_core = new TProfile("","", n_bins, edges, "s");
+
+  for (int i = 0; i < v_prop_dist.size(); i++) {
+      if (v_prop_dist[i] > VALID_MAX) continue; // same overall distance sanity cut
+      if (v_r[i] > DT_CUTOFF) continue;         // <-- the new transverse cut d_T <= 600
+
+      double discrepancy = (v_hits_geo[i] - v_hits_sim[i]) / v_hits_sim[i];
+      double weight      = v_hits_sim[i];
+
+      profile_core->Fill(v_prop_dist[i], discrepancy, weight);
+  }
+
+//----------------------------------
   // extract points from profile
   std::vector<double> r_values, r_values_error, mean, rms;
-  for(int i = 1; i <= n_bins; i++) {
-      // skip empty bins
-      if(!(profile->GetBinEntries(i) > 0)) {
-        std::cout << "bin: " << i << " empty\n";
-        continue;
-      }
-      std::cout << "bin: " << i << " " << profile->GetBinEntries(i) << std::endl;
 
-      //if (i > 11) continue;     // cut out underpopulated last bins
-      // extract values
-      mean.push_back(profile->GetBinContent(i));
-      rms.push_back(profile->GetBinError(i));
-      r_values.push_back(((i-1)+0.5)*binsize);
-      //std::cout << i << ", " << binsize << std::endl;
-      r_values_error.push_back(0.5*binsize);
+  int min_entries = 100; // optional safety cut
+  for (int i = 1; i <= n_bins; ++i) {
+    if (profile->GetBinEntries(i) < min_entries) continue;  // optional
+
+    double x_center = profile->GetXaxis()->GetBinCenter(i);
+    double half_width = 0.5 * (profile->GetXaxis()->GetBinUpEdge(i) - profile->GetXaxis()->GetBinLowEdge(i));
+
+    mean.push_back(profile->GetBinContent(i));
+    rms.push_back(profile->GetBinError(i));
+    r_values.push_back(x_center);
+    r_values_error.push_back(half_width);
   }
+
 
   // print values
   std::cout << std::endl;
@@ -680,6 +752,119 @@ int main(int argc, char * argv[]){
   legend->Draw("same");
 
   c1->SaveAs("plots/Bias_"+type+".pdf");
+
+  // =========================
+  // SECOND PLOT: d_T <= 600cm
+  // =========================
+
+  // extract points from profile_core (d_T <= 600 cm only)
+  std::vector<double> r_values_core, r_values_error_core, mean_core, rms_core;
+
+  int min_entries_core = 100; // same stat cut
+  for (int iBin = 1; iBin <= n_bins; ++iBin) {
+    if (profile_core->GetBinEntries(iBin) < min_entries_core) continue;
+
+    double x_center   = profile_core->GetXaxis()->GetBinCenter(iBin);
+    double half_width = 0.5 * (
+        profile_core->GetXaxis()->GetBinUpEdge(iBin) -
+        profile_core->GetXaxis()->GetBinLowEdge(iBin)
+    );
+
+    mean_core.push_back(profile_core->GetBinContent(iBin)); // Bias
+    rms_core.push_back(profile_core->GetBinError(iBin));    // RMS-ish
+    r_values_core.push_back(x_center);
+    r_values_error_core.push_back(half_width);
+  }
+
+
+  // print values for the cut sample (debug / copy-paste to slides)
+  std::cout << "=== d_T <= 600 cm sample ===" << std::endl;
+  std::cout << "R: ";
+  for (size_t i = 0; i < r_values_core.size(); i++) {
+    std::cout << r_values_core[i] << ", ";
+  }
+  std::cout << std::endl;
+  std::cout << "eR: ";
+  for (size_t i = 0; i < r_values_error_core.size(); i++) {
+    std::cout << r_values_error_core[i] << ", ";
+  }
+  std::cout << std::endl;
+  std::cout << "RMS: ";
+  for (size_t i = 0; i < rms_core.size(); i++) {
+    std::cout << rms_core[i] << ", ";
+  }
+  std::cout << std::endl;
+  std::cout << "Bias: ";
+  for (size_t i = 0; i < mean_core.size(); i++) {
+    std::cout << mean_core[i] << ", ";
+  }
+  std::cout << std::endl << std::endl;
+
+  // make a new canvas for the core-only result
+  TCanvas *c1_core = new TCanvas("c1_core","",200,10,1080,1080);
+  c1_core->SetGrid();
+  c1_core->SetBottomMargin(0.105);
+  c1_core->SetLeftMargin(0.105);
+
+  // graphs for core
+  TGraphErrors *gr1_core = new TGraphErrors(
+      r_values_core.size(),
+      &(r_values_core[0]),
+      &(rms_core[0]),
+      &(r_values_error_core[0]),
+      0
+  );
+
+  TGraphErrors *gr2_core = new TGraphErrors(
+      r_values_core.size(),
+      &(r_values_core[0]),
+      &(mean_core[0]),
+      &(r_values_error_core[0]),
+      0
+  );
+
+  // cosmetics
+  TString type_core = "single-sided supercells";
+
+  gr1_core->GetXaxis()->SetTitle("distance [cm]");
+  gr1_core->GetYaxis()->SetTitle("N_{#gamma} - N_{Geant4} / N_{Geant4}");
+  gr1_core->SetTitle("protoDUNE-hd: " + type_core + "  (d_{T} < 600 cm)");
+
+  // we only trust / want to *show* the calibrated core region,
+  // so zoom x to 0–600 for clarity
+  gr1_core->GetXaxis()->SetRangeUser(0,1000);
+  gr1_core->GetYaxis()->SetRangeUser(-0.5,0.5);
+
+  gr1_core->GetYaxis()->SetTitleSize(0.05);
+  gr1_core->GetYaxis()->SetTitleOffset(1.);
+  gr1_core->GetXaxis()->SetTitleSize(0.05);
+  gr1_core->GetXaxis()->SetTitleOffset(1.);
+
+  gr1_core->SetMarkerStyle(kFullSquare);
+  gr1_core->SetMarkerSize(1.8);
+  gr1_core->SetMarkerColor(kBlack);
+
+  gr2_core->SetMarkerStyle(kFullCircle);
+  gr2_core->SetMarkerSize(1.8);
+  gr2_core->SetMarkerColor(kRed);
+
+  // draw
+  c1_core->Update();
+  gr1_core->Draw("AP");
+  c1_core->Update();
+  gr2_core->Draw("P same");
+
+  // legend
+  TLegend *legend_core = new TLegend(0.6,0.7,0.9,0.9,NULL,"brNDC");
+  legend_core->AddEntry(gr1_core,"RMS","P");
+  legend_core->AddEntry(gr2_core,"Bias","P");
+  legend_core->SetBorderSize(0);
+  legend_core->SetFillStyle(0);
+  legend_core->Draw("same");
+
+  // save second figure
+  c1_core->SaveAs("plots/Bias_"+type_core+"_dTlt600.pdf");
+
 }
 
 
@@ -763,8 +948,14 @@ int VUVHits(const int &Nphotons_created, const TVector3 &ScintPoint, const TVect
   // int j = (theta/delta_angulo);
   // distance from center for border corrections (cathode), and from anode (laterals)
   double r_distance = 0;
-  if (op_channel_orientation == 0)  r_distance = sqrt( pow(ScintPoint[1] - y_foils, 2) + pow(ScintPoint[2] - z_foils, 2)); 
-  else if (op_channel_orientation == 1) r_distance = abs(325.01 - ScintPoint[0]);
+  if (fVerticalBorderCorrectionMode){
+    double r_distance = sqrt( pow(ScintPoint[1] - y_foils, 2) );
+  }
+  else{
+    if (op_channel_orientation == 0)  r_distance = sqrt( pow(ScintPoint[1] - y_foils, 2) + pow(ScintPoint[2] - z_foils, 2)); 
+    else if (op_channel_orientation == 1) r_distance = abs(325.01 - ScintPoint[0]);
+  }
+  
   // GH parameters
   double pars_ini[4] = {0,0,0,0};
   double s1 = 0; double s2 = 0; double s3 = 0;
@@ -875,7 +1066,15 @@ int VisHits(const int &Nphotons_created, const TVector3 &ScintPoint, const TVect
   double pars_ini[4] = {fGHVUVPars[0][j], fGHVUVPars[1][j], fGHVUVPars[2][j], fGHVUVPars[3][j]};
 
   // gh border
-  double r_distance = sqrt( pow(ScintPoint[1] - y_foils, 2) + pow(ScintPoint[2] - z_foils, 2));
+  double r_distance = 0;
+  if (fVerticalBorderCorrectionMode){
+    double r_distance = sqrt( pow(ScintPoint[1] - y_foils, 2) );
+  }
+  else{
+    double r_distance = sqrt( pow(ScintPoint[1] - y_foils, 2) + pow(ScintPoint[2] - z_foils, 2));
+  }
+  
+  
 
   double s1 = interpolate( angulo, slopes1, theta_cathode, true);
   double s2 = interpolate( angulo, slopes2, theta_cathode, true);

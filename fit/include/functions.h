@@ -36,6 +36,31 @@ TGraphErrors *Profile_to_Graph(TProfile *px, TProfile *py, int j) {
 }
 
 
+// TGraphErrors *Profile_to_Graph(TProfile *px, TProfile *py, int /*j*/) {
+//   TAxis *ax = py->GetXaxis();
+//   const int nbins = ax->GetNbins();
+//   std::vector<double> vx, vy, vex, vey;
+//   vx.reserve(nbins); vy.reserve(nbins); vex.reserve(nbins); vey.reserve(nbins);
+
+//   for (int bin = 1; bin <= nbins; ++bin) {              // 1..nbins (skip underflow/overflow)
+//     const double entries = py->GetBinEntries(bin);
+//     if (entries <= 0) continue;                         // only drop truly empty bins
+
+//     const double x  = ax->GetBinCenter(bin);            // robust x
+//     const double ex = 0.5 * ax->GetBinWidth(bin);       // or 0 if you prefer
+//     const double y  = py->GetBinContent(bin);           // mean ratio (can be 0)
+//     const double ey = py->GetBinError(bin);             // error on the mean
+
+//     vx.push_back(x); vy.push_back(y);
+//     vex.push_back(ex); vey.push_back(ey);
+//   }
+
+//   auto *gr = new TGraphErrors((int)vx.size(), vx.data(), vy.data(), vex.data(), vey.data());
+//   return gr;
+// }
+
+
+
 ///////////////////////////////////////////////////
 Double_t GaisserHillas(double *x,double *par)
 {

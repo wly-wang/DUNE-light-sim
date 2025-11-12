@@ -25,6 +25,9 @@
 #include "TVector3.h"
 #include "TGraphErrors.h"
 #include "Math/SpecFuncMathMore.h"
+#include "TLatex.h"
+#include <algorithm>
+#include "TStyle.h"
 
 #include <vector>
 #include <fstream>
@@ -37,7 +40,7 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
        bool IsSphere, std::vector<double> &v6, std::vector<double> &v7) {
   std::cout<<"calcula function ..."<<std::endl;
 
-  double min_number_entries = 50;
+  double min_number_entries = 20;
   // width and height in cm of single arapuca active window
   double arapuca_w = 10;
   double arapuca_h = 47.75;
@@ -45,16 +48,15 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
   double b = 8*2.54/2.;
   // Y-Z coordinates of the active volume center
   const double centerYZ[2] = {0, 697.17};
-  //const double centerXZ[2] = {0., 1000.};
-  //double x_anode = 324.97;//325.01;
-  //double y_anode = 0;
-  //double z_anode = 1000;
 
   // Modification requried from Users:
   // LAr absorption length in cm
   // This needs to match with the value used in the full-geant4 simulation
   //const double L_abs = 8000.; //xenon
   const double L_abs = 2000.; //argon
+
+  // special case: VerticalBorderCorrectionMode use Y direction only
+  bool fVerticalBorderCorrectionMode = true;
 
   gRandom->SetSeed(0);
   //getting the pmt positions (y and z)
@@ -233,8 +235,10 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
         }
       }
 
-      //pure geometric estimation of the number of arriving VUV photons
-      double rec_N =  exp(-1.*distance_to_pmt/L_abs)*gRandom->Poisson(num_phot_generated*geo_factor/(4*3.1416));
+      // pure geometric estimation of the number of arriving VUV photons
+      //double rec_N =  exp(-1.*distance_to_pmt/L_abs)*gRandom->Poisson(num_phot_generated*geo_factor/(4*TMath::Pi()));
+      double rec_N = exp(-1.*distance_to_pmt/L_abs) * (num_phot_generated*geo_factor/(4.*TMath::Pi()));
+
       
       //if (entries > 1000) std::cout << "OpDet: " << i << ", distance: " << distance_to_pmt << ", theta: " << theta << ", G4: " << entries << ", S-A: " << rec_N << ", geo = " << geo_factor << std::endl;
       v_hits.push_back(entries);
@@ -276,6 +280,11 @@ int main(int argc, char * argv[]) {
     std::cerr << "Please specify input file" << std::endl;
     return 1;
   }
+
+  // Disable stats and automatic titles globally
+  gStyle->SetOptStat(0);
+  gStyle->SetOptTitle(0);
+
   // path to the directory where the files are
   // path + file containing the LDS id and positions (x, y, z)
   std::string positions = "./protodune_optical_mapping.txt";
@@ -284,6 +293,9 @@ int main(int argc, char * argv[]) {
   //std::string input_file = file_name + ".root";
   std::string input_file = argv[1];
   std::string save_dir = "./plots/";
+  // Toggle: false = linear (pol1); true = quadratic/parabolic (pol2) for N_max(d_T)
+  const bool fUseQuadraticNmax = false;
+
 
   // If PMTs (IsSphere), if (X-)ARAPUCAS (IsRectangular),
   // acrylic disk in front of the PMTs (both false)
@@ -301,25 +313,27 @@ int main(int argc, char * argv[]) {
 
   //Distance range and step for the profile to fit with GH
   double d_min = 0;
-  double d_max = 2000.; // changable 1400 - argon; 2000 -xenon
+  double d_max = 1000.; // changable 1400 - argon; 2000 -xenon
   double step_d = 50;
+
+  const double FIT_MAX = 1000.0;   // only fit up to 600 cm
+  const double BORDER_FIT_MAX = 900.0;  // only use up to 600 cm of d_T in border-parameter fits
+
 
   bool isDouble=true;
   //Center distance bins
   double range_d = 900; //400;
 
   // Modification requried from Users:
-  const int M = 5;
+  const int M = 12;
   double range_d_array[M+1];
   if (!isDouble) {
-    //double range_d_array_temp[M+1] = {0.,100.,150.,200.,250.,300.,range_d};
-    double range_d_array_temp[M+1] = {0.,200.,350.,500.,650.,range_d};
-    //double range_d_array_temp[M+1] = {200.,350.,500.,600.,range_d};
+    // double range_d_array_temp[M+1] = {0.,200.,350.,500.,650.,range_d};
+    double range_d_array_temp[M+1] = {0., 75., 150., 225., 300., 375., 450., 525., 600., 675., 750., 825.,range_d};
     std::copy(std::begin(range_d_array_temp), std::end(range_d_array_temp), std::begin(range_d_array));
   }else {
-    //double range_d_array_temp[M+1] = {0.,100.,150.,200.,250.,280.,range_d};
-    double range_d_array_temp[M+1] = {0.,200.,350.,500.,650.,range_d};
-    //double range_d_array_temp[M+1] = {200.,350.,500.,600.,range_d};
+    // double range_d_array_temp[M+1] = {0.,200.,350.,500.,650.,range_d};
+    double range_d_array_temp[M+1] = {0., 75., 150., 225., 300., 375., 450., 525., 600., 675., 750., 825.,range_d};
     
     std::copy(std::begin(range_d_array_temp), std::end(range_d_array_temp), std::begin(range_d_array));
   }
@@ -359,13 +373,13 @@ int main(int argc, char * argv[]) {
       else pars_ini[3] = -3000;*/
 
       // argon cathode
-      if (j < 1) pars_ini[3] = -1800;
-      else if (j < 2) pars_ini[3] = -1000;
-      else if (j < 4) pars_ini[3] = -500;
-      else if (j < 5) pars_ini[3] = -250;
-      else if (j < 6) pars_ini[3] = -200;
-      else if (j < 8) pars_ini[3] = -150;
-      else pars_ini[3] = -50;
+      if (j < 1) pars_ini[3] = -5000;
+      else if (j < 2) pars_ini[3] = -3000;
+      else if (j < 4) pars_ini[3] = -3000;
+      else if (j < 5) pars_ini[3] = -3000;
+      else if (j < 6) pars_ini[3] = -1000;
+      else if (j < 8) pars_ini[3] = -500;
+      else pars_ini[3] = -100;
 
       // for cathode. the tune
       /*if (j == 1 && k < 5) {
@@ -431,6 +445,11 @@ int main(int argc, char * argv[]) {
   calcula(positions, input_file, v_distance, v_hits, v_rec_hits, v_offset_angle, v_d_center, IsRectangular, IsSphere, v_x, v_devx);
 
   for(int i=0; i<v_distance.size(); i++){
+
+    // Skip anything that's too far away (>1000cm)
+    if (v_distance[i] > 1000.) continue; 
+
+
     double costheta = cos(3.1416*v_offset_angle.at(i)/180.);
     //which angulat bin
     int j = int(v_offset_angle.at(i)/delta_angulo);
@@ -440,7 +459,6 @@ int main(int argc, char * argv[]) {
     int k = std::lower_bound(range_d_array, range_d_array+M+1, temp) - range_d_array - 1;
     //int k = int(v_d_center.at(i)/delta_d);
     if(k>=M) continue;
-
     pdiff_d[j][k]->Fill(v_distance.at(i), v_hits.at(i)/v_rec_hits.at(i)*costheta);
     hd_centers[k]->Fill(v_d_center.at(i));
     h->Fill(v_d_center.at(i));
@@ -526,62 +544,112 @@ int main(int argc, char * argv[]) {
     }
   }
 
-  // Canvas to plot correction curves.
-  const int dimension = ceil(double(N_canvas.size())/2.);
-  TCanvas *canvas1 = new TCanvas("canvas1", "GH",200,200,dimension*450,800);
-  if(N_canvas.size() > 1) {
-    double nn = double(N_canvas.size())/2.;
-    canvas1->Divide(ceil(nn),2);
-  }
+  // ====================== Canvas to plot correction curves. ======================
+
+  // const int dim = N_canvas.size();
+  // choose layout: at most 3 rows; columns as needed
+  const int maxRows = 3;
+  int nCols = (dim <= 3) ? dim : std::min(4, dim);
+  int nRows = (dim + nCols - 1) / nCols;
+  nRows = std::min(nRows, maxRows);
+
+  // generous pad size so text is readable in the PDF
+  const int padW = 900;   // width per pad (px)
+  const int padH = 700;   // height per pad (px)
+
+  TCanvas *canvas1 = new TCanvas("canvas1", "GH", 200, 200, nCols*padW, nRows*padH);
+  // small gaps between pads
+  canvas1->Divide(nCols, nRows, 0.001, 0.001);
+
   double x_0[2] = {0, d_max};
   double y_0[2] = {0, 2.};
-  TGraph* gg0[dim];
-  std::vector<double> p1[dim], p2[dim], p3[dim], p4[dim], ep1[dim], ep2[dim], ep3[dim];
-  TLegend *leg1 = new TLegend(0.53, 0.5, 0.95, 0.9, NULL, "brNDC");
-  leg1->SetHeader("");
-  leg1->SetFillStyle(0);  // Make the background transparent
-  leg1->SetBorderSize(0); // Remove the legend border
+  TGraph* gg0[/*dim*/ 64]; // enough space; ROOT doesn't like VLA in some builds
 
+  // roomier legend and bigger text
+  TLegend *leg1 = new TLegend(0.62, 0.55, 0.95, 0.93, NULL, "brNDC");
+  leg1->SetHeader("");
+  leg1->SetFillStyle(0);
+  leg1->SetBorderSize(0);
+  leg1->SetTextSize(0.035);
+
+  std::vector<double> p1[64], p2[64], p3[64], p4[64], ep1[64], ep2[64], ep3[64];
   char label[N][20];
 
-  for(int l=0; l < dim; l++){
+  for (int l = 0; l < dim; ++l) {
     int k = N_canvas.at(l);
-    canvas1->cd(1 + l);
-    gg0[l] = new TGraph(2,x_0,y_0);
+    canvas1->cd(l + 1);
+
+    // comfortable pad margins so tick labels & titles fit
+    gPad->SetLeftMargin(0.14);
+    gPad->SetRightMargin(0.05);
+    gPad->SetBottomMargin(0.16);
+    gPad->SetTopMargin(0.10);
+
+    gg0[l] = new TGraph(2, x_0, y_0);
     gg0[l]->SetTitle(title[k].c_str());
-    gg0[l]->GetYaxis()->SetTitleSize(0.05);
-    gg0[l]->GetYaxis()->SetTitleOffset(1.);
-    gg0[l]->GetXaxis()->SetTitleSize(0.05);
-    gg0[l]->GetXaxis()->SetTitleOffset(1.);
-    gg0[l]->GetXaxis()->SetRangeUser(0,d_max);
-    gg0[l]->GetYaxis()->SetRangeUser(0, 1.6); // changable.
+
+    // bigger fonts for visibility
     gg0[l]->GetXaxis()->SetTitle("distance [cm]");
     gg0[l]->GetYaxis()->SetTitle("N_{hit} / N_{#Omega} / cos(#theta)");
-    gg0[l]->Draw("ap");
 
-//Info in <ROOT::Math::ParameterSettings>: lower/upper bounds outside current parameter value. The value will be set to (low+up)/2
-    for(int j=0; j < N; j++) {
-      double pars_GH[4] = {-999, -999, -999, -999};
-      double epars_GH[4]= {-999, -999, -999, -999};
+    // Setting dynamic Y axis range
+    double yMax = 0.0;
+    for (int j = 0; j < N; ++j) {
+      if (n_entries[j][k] <= 0 || !gr[j][k]) continue;
+      int nPoints = gr[j][k]->GetN();
+      for (int i = 0; i < nPoints; ++i) {
+        double x, y;
+        gr[j][k]->GetPoint(i, x, y);
+        double ey = gr[j][k]->GetErrorY(i);
+        yMax = std::max(yMax, y + ey);
+      }
+    }
+    if (yMax <= 0) yMax = 1.0; // safety fallback
+    double headroom = 1.15;    // 15% padding on top
 
-      if(n_entries[j][k]>0) {
+    gg0[l]->GetXaxis()->SetRangeUser(0, d_max);
+    gg0[l]->GetYaxis()->SetRangeUser(0, yMax * headroom);
 
-        gr[j][k]->Draw("p");
 
-        // Fitting the simulation data
-        gr[j][k]->Fit(GH[j][k], options[j].c_str(),"", min_x[j][k],max_x[j][k]);
-        //Loading parameters
+    gg0[l]->GetXaxis()->SetLabelSize(0.045);
+    gg0[l]->GetXaxis()->SetTitleSize(0.055);
+    gg0[l]->GetXaxis()->SetTitleOffset(1.1);
+
+    gg0[l]->GetYaxis()->SetLabelSize(0.045);
+    gg0[l]->GetYaxis()->SetTitleSize(0.055);
+    gg0[l]->GetYaxis()->SetTitleOffset(1.10);
+
+    gg0[l]->Draw("AP");
+
+    for (int j = 0; j < N; ++j) {
+      double pars_GH[4]  = {-999, -999, -999, -999};
+      double epars_GH[4] = {-999, -999, -999, -999};
+
+      if (n_entries[j][k] > 0) {
+        gr[j][k]->Draw("P");
+        gr[j][k]->Fit(GH[j][k], options[j].c_str(), "", min_x[j][k], max_x[j][k]);
+
+        double fit_lo = min_x[j][k];
+        double fit_hi = std::min(FIT_MAX, max_x[j][k]);  // clamp at 600
+
+        if (fit_lo < fit_hi) {
+          gr[j][k]->Fit(GH[j][k], options[j].c_str(), "", fit_lo, fit_hi);
+        }
+        
+
         GH[j][k]->GetParameters(pars_GH);
         GH[j][k]->SetParameters(pars_GH);
         GH[j][k]->SetLineColor(1 + j);
-        if(j==4) GH[j][k]->SetLineColor(kOrange+7);
+        if (j == 4) GH[j][k]->SetLineColor(kOrange + 7);
         GH[j][k]->SetLineStyle(kDashed);
-        GH[j][k]->Draw("same");
+        GH[j][k]->Draw("SAME");
+
         const double* epars_GH_ = GH[j][k]->GetParErrors();
         epars_GH[0] = epars_GH_[0];
         epars_GH[1] = epars_GH_[1];
         epars_GH[2] = epars_GH_[2];
       }
+
       p1[l].push_back(pars_GH[0]);
       p2[l].push_back(pars_GH[1]);
       p3[l].push_back(pars_GH[2]);
@@ -589,24 +657,140 @@ int main(int argc, char * argv[]) {
       ep1[l].push_back(epars_GH[0]);
       ep2[l].push_back(epars_GH[1]);
       ep3[l].push_back(epars_GH[2]);
-      if(l==0) {
-        int a_min = j*delta_angulo;
-        int a_max = (j+1)*delta_angulo;
-        sprintf(label[j],"#theta #in [%i, %i] deg",a_min, a_max);
-        leg1->AddEntry(gr[j][k],label[j],"p");
+
+      if (l == 0) {
+        int a_min = j * delta_angulo;
+        int a_max = (j + 1) * delta_angulo;
+        sprintf(label[j], "#theta #in [%i, %i] deg", a_min, a_max);
+        leg1->AddEntry(gr[j][k], label[j], "p");
       }
     }
-   if(l==0)  leg1->Draw();
+
+    if (l == 0) leg1->Draw();
   }
 
   canvas1->Update();
   canvas1->Modified();
-  //canvas1->WaitPrimitive();
 
   TString fig_name2;
-  if (isDouble) fig_name2 = save_dir + file_name+"_GH_double_sided.pdf";
-  else fig_name2 = save_dir + file_name+"_GH_single_sided.pdf";
+  if (isDouble) fig_name2 = save_dir + file_name + "_GH_double_sided.pdf";
+  else          fig_name2 = save_dir + file_name + "_GH_single_sided.pdf";
   canvas1->SaveAs(fig_name2);
+  
+  // ==================== end canvas block ====================
+
+  // ====================== NEW: Overlays by angle, 6 DtC per plot ======================
+  // Choose up to 6 DtC bins spanning the available ones (N_canvas order)
+  std::vector<int> chosenK;
+  const int wantK = 6;
+  if (dim <= wantK) {
+    chosenK = N_canvas; // use all if <= 6
+  } else {
+    chosenK.reserve(wantK);
+    for (int i = 0; i < wantK; ++i) {
+      int idx = int( std::round( i * (dim - 1.0) / (wantK - 1.0) ) );
+      chosenK.push_back( N_canvas.at(idx) );
+    }
+  }
+
+  // Colors/markers for the 6 DtC curves
+  const Color_t col6[6]   = { kBlack, kRed+1, kBlue+1, kGreen+2, kMagenta+1, kOrange+7 };
+  const Style_t mark6[6]  = { 20, 21, 22, 23, 33, 34 };
+
+  // One canvas per angle bin j, overlay the 6 DtC curves
+  for (int j = 0; j < N; ++j) {
+    // Skip angle bins with no data in any chosen DtC
+    bool hasAny = false;
+    for (int ii = 0; ii < (int)chosenK.size(); ++ii) {
+      int k = chosenK[ii];
+      if (n_entries[j][k] > 0) { hasAny = true; break; }
+    }
+    if (!hasAny) continue;
+
+    TString cname; cname.Form("c_angle_%d", j);
+    TCanvas* cAng = new TCanvas(cname, cname, 900, 650);
+    cAng->SetLeftMargin(0.14);
+    cAng->SetRightMargin(0.05);
+    cAng->SetBottomMargin(0.14);
+    cAng->SetTopMargin(0.08);
+
+    // Frame
+    TH1F* frame = new TH1F("", "", 100, 0, d_max);
+    frame->GetXaxis()->SetTitle("distance [cm]");
+    frame->GetYaxis()->SetTitle("N_{hit} / N_{#Omega} / cos(#theta)");
+    frame->GetXaxis()->SetLabelSize(0.045);
+    frame->GetXaxis()->SetTitleSize(0.055);
+    frame->GetXaxis()->SetTitleOffset(1.1);
+    frame->GetYaxis()->SetLabelSize(0.045);
+    frame->GetYaxis()->SetTitleSize(0.055);
+    frame->GetYaxis()->SetTitleOffset(1.10);
+    
+    // --- Dynamically set Y axis upper limit for this angle bin (j) ---
+    double yMax = 0.0;
+    for (int k = 0; k < M; ++k) { // loop over distance-to-center bins
+      if (!gr[j][k] || n_entries[j][k] <= 0) continue;
+      int nPoints = gr[j][k]->GetN();
+      for (int i = 0; i < nPoints; ++i) {
+        double x, y;
+        gr[j][k]->GetPoint(i, x, y);
+        double ey = gr[j][k]->GetErrorY(i);
+        yMax = std::max(yMax, y + ey);
+      }
+    }
+
+    if (yMax <= 0) yMax = 1.0;   // fallback
+    double headroom = 1.15;
+    frame->GetYaxis()->SetRangeUser(0., yMax * headroom);
+
+    frame->Draw("AXIS");
+
+    // Title shows the angle bin center
+    TString t; t.Form("#theta #in [%d, %d] deg",
+                      int(j*delta_angulo), int((j+1)*delta_angulo));
+    TLatex lat;
+    lat.SetNDC(true); lat.SetTextSize(0.045);
+    lat.DrawLatex(0.16, 0.93, t);
+
+    // Legend
+    TLegend* legA = new TLegend(0.60, 0.58, 0.94, 0.92);
+    legA->SetFillStyle(0);
+    legA->SetBorderSize(0);
+    legA->SetTextSize(0.035);
+
+    // Draw selected DtC curves and their GH fits
+    for (int ii = 0; ii < (int)chosenK.size(); ++ii) {
+      int k = chosenK[ii];
+      if (n_entries[j][k] <= 0) continue;
+
+      // Data points
+      gr[j][k]->SetLineColor(col6[ii]);
+      gr[j][k]->SetMarkerColor(col6[ii]);
+      gr[j][k]->SetMarkerStyle(mark6[ii]);
+      gr[j][k]->SetMarkerSize(0.7);
+      gr[j][k]->Draw("P SAME");
+
+      // Draw GH fit (already fit above); re-style to match
+      GH[j][k]->SetLineColor(col6[ii]);
+      GH[j][k]->SetLineStyle(kDashed);
+      GH[j][k]->SetLineWidth(2);
+      GH[j][k]->Draw("SAME");
+
+      // Legend label with DtC mean for this k
+      double dmean = (hd_centers[k]->GetEntries()>0) ? hd_centers[k]->GetMean() : d_center[k];
+      TString lab; lab.Form("d_{T} #approx %.0f cm", dmean);
+      legA->AddEntry(gr[j][k], lab, "p");
+    }
+
+    legA->Draw();
+
+    // Save
+    TString out; out.Form("%s%s_overlayByAngle_theta%02d.pdf",
+                          save_dir.c_str(), file_name.c_str(), j);
+    cAng->SaveAs(out);
+  }
+  // ====================== END new overlays ======================
+
+
 
   std::cout<<"  GH p1: "<<std::endl <<"{";
   for(int k=0; k < dim; k++){
@@ -683,36 +867,58 @@ int main(int argc, char * argv[]) {
     gdmax[j] =   new TGraphErrors(vd_center.size(), &d_center[0], &vdmax[j][0], 0, &vedmax[j][0]);
     glambda[j] = new TGraphErrors(vd_center.size(), &d_center[0], &vlambda[j][0], 0, &velambda[j][0]);
 
-    f1[j] =  new TF1("f1",pol1,0.,range_d,2);
+    // N_max(d_T) fit: linear or quadratic based on the hard boolean
+    f1[j] = new TF1("f1", fUseQuadraticNmax ? "pol2" : "pol1", 0., range_d);
     f1[j]->SetLineColor(1 + j);
-    if(j==4) {f1[j]->SetLineColor(kOrange+7);}
+    if (j == 4) { f1[j]->SetLineColor(kOrange+7); }
     f1[j]->SetLineStyle(kDashed);
-    f2[j] =  new TF1("f2",pol1,0.,range_d,4);
+
+    // d_max(d_T) and lambda(d_T) remain linear
+    f2[j] = new TF1("f2", "pol1", 0., range_d);
     f2[j]->SetLineColor(1 + j);
-    if(j==4) {f2[j]->SetLineColor(kOrange+7);}
+    if (j == 4) { f2[j]->SetLineColor(kOrange+7); }
     f2[j]->SetLineStyle(kDashed);
-    f3[j] =  new TF1("f3",pol1,0.,range_d,2);
+
+    f3[j] = new TF1("f3", "pol1", 0., range_d);
     f3[j]->SetLineColor(1 + j);
-    if(j==4) {f3[j]->SetLineColor(kOrange+7);}
+    if (j == 4) { f3[j]->SetLineColor(kOrange+7); }
     f3[j]->SetLineStyle(kDashed);
 
-    gNmax[j]->Fit(f1[j],"Q","",0,range_d);
-    gdmax[j]->Fit(f2[j],"Q","",0,range_d);
-    glambda[j]->Fit(f3[j],"Q","",0,range_d);
+    f1[j]->SetLineWidth(1);
+    f2[j]->SetLineWidth(1);
+    f3[j]->SetLineWidth(1);
 
-    slopes1.push_back(f1[j]->GetParameter(1));
+    // draw order: first fits, then points
+    f2[j]->Draw("l same");
+    gdmax[j]->Draw("p same");
+
+
+    double bf_hi = std::min(BORDER_FIT_MAX, range_d);  // needs <algorithm>
+    gNmax[j]->Fit(f1[j], "Q", "", 0, bf_hi);
+    gdmax[j]->Fit(f2[j], "Q", "", 0, bf_hi);
+    glambda[j]->Fit(f3[j], "Q", "", 0, bf_hi);
+
+
+    // For N_max: parameter(1) is the linear term for both pol1 and pol2.
+    // If quadratic, this is the derivative at d_T = 0 (local slope).
+    double p0_Nmax = f1[j]->GetParameter(0);
+    double p1_Nmax = f1[j]->GetParameter(1);
+    double e1_Nmax = f1[j]->GetParError(1);
+
+    slopes1.push_back(p1_Nmax);
+    eslopes1.push_back(e1_Nmax);
+
+    // d_max and lambda unchanged (linear)
     slopes2.push_back(f2[j]->GetParameter(1));
+    eslopes2.push_back(f2[j]->GetParError(1));
     slopes3.push_back(f3[j]->GetParameter(1));
-    const double* tmp1 = f1[j]->GetParErrors();
-    const double* tmp2 = f2[j]->GetParErrors();
-    const double* tmp3 = f3[j]->GetParErrors();
-    eslopes1.push_back(tmp1[1]);
-    eslopes2.push_back(tmp2[1]);
-    eslopes3.push_back(tmp3[1]);
+    eslopes3.push_back(f3[j]->GetParError(1));
 
-    a1.push_back(f1[j]->GetParameter(0));
+    // Intercepts used later
+    a1.push_back(p0_Nmax);
     a2.push_back(f2[j]->GetParameter(0));
     a3.push_back(f3[j]->GetParameter(0));
+
 
     angles.push_back(theta[j]);
 
@@ -832,17 +1038,19 @@ int main(int argc, char * argv[]) {
     gf[j] = new TGraphErrors(2, xx[j], yy[j]);
   }
 
-  TCanvas *c = new TCanvas("c", "canvas", 500, 1700);
+  TCanvas *c = new TCanvas("c", "canvas", 900, 2000);
   c->Divide(1,3);
   c->cd(1);
   TPad *pad1 = new TPad("pad1", "pad1", 0., 0.37, 1, 1.0);
   pad1->SetBottomMargin(0.1);
+  pad1->SetLeftMargin(0.16);    
+  pad1->SetRightMargin(0.04); 
   pad1->Draw();
   pad1->cd();
   gf[0]->GetYaxis()->SetLabelSize(0.05);
   gf[0]->GetYaxis()->SetTitleSize(0.06);
   gf[0]->GetYaxis()->SetTitleOffset(0.74);
-  gf[0]->GetYaxis()->SetRangeUser(0,1.5);    // need to rewrite this
+  gf[0]->GetYaxis()->SetRangeUser(0,2.);    // need to rewrite this
   gf[0]->GetXaxis()->SetRangeUser(0,range_d*1.05); // need to rewrite this to sset the range of border effect. 
   gf[0]->GetXaxis()->SetLabelSize(0.05);
   gf[0]->GetXaxis()->SetTitleSize(0.05);
@@ -856,9 +1064,12 @@ int main(int argc, char * argv[]) {
   }
 
   c->cd(1);
+  c->cd(1);
   TPad *pad2 = new TPad("pad2", "pad2", 0, 0, 1, 0.35);
-  pad2->SetTopMargin(0);
-  pad2->SetBottomMargin(0.2);
+  pad2->SetTopMargin(0.00);
+  pad2->SetBottomMargin(0.20);
+  pad2->SetLeftMargin(0.16);    
+  pad2->SetRightMargin(0.04);    
   pad2->Draw();
   pad2->cd();
   g1->GetYaxis()->SetLabelSize(0.07);
@@ -873,13 +1084,15 @@ int main(int argc, char * argv[]) {
 
   c->cd(2);
   TPad *padc1 = new TPad("padc1", "padc1", 0., 0.37, 1, 1.0);
-  padc1->SetBottomMargin(0.1);
+  padc1->SetBottomMargin(0.10);
+  padc1->SetLeftMargin(0.16);    
+  padc1->SetRightMargin(0.04);  
   padc1->Draw();
   padc1->cd();
   gf[1]->GetYaxis()->SetLabelSize(0.05);
   gf[1]->GetYaxis()->SetTitleSize(0.06);
   gf[1]->GetYaxis()->SetTitleOffset(0.74);
-  gf[1]->GetYaxis()->SetRangeUser(0,230);  // need to rewrite this
+  gf[1]->GetYaxis()->SetRangeUser(70., 300.);  // need to rewrite this
   gf[1]->GetXaxis()->SetRangeUser(0,range_d*1.05); // need to rewrite this to sset the range of border effect. 
   gf[1]->GetXaxis()->SetLabelSize(0.05);
   gf[1]->GetXaxis()->SetTitleSize(0.05);
@@ -893,9 +1106,12 @@ int main(int argc, char * argv[]) {
   }
 
   c->cd(2);
+
   TPad *padc2 = new TPad("padc2", "padc2", 0, 0, 1, 0.35);
-  padc2->SetTopMargin(0);
-  padc2->SetBottomMargin(0.2);
+  padc2->SetTopMargin(0.00);
+  padc2->SetBottomMargin(0.20);
+  padc2->SetLeftMargin(0.16);   
+  padc2->SetRightMargin(0.04);   
   padc2->Draw();
   padc2->cd();
   g2->GetYaxis()->SetLabelSize(0.07);
@@ -910,13 +1126,15 @@ int main(int argc, char * argv[]) {
 
   c->cd(3);
   TPad *padcc1 = new TPad("padcc1", "padcc1", 0., 0.37, 1, 1.0);
-  padcc1->SetBottomMargin(0.1);
+  padcc1->SetBottomMargin(0.10);
+  padcc1->SetLeftMargin(0.16);   
+  padcc1->SetRightMargin(0.04); 
   padcc1->Draw();
   padcc1->cd();
   gf[2]->GetYaxis()->SetLabelSize(0.05);
   gf[2]->GetYaxis()->SetTitleSize(0.06);
   gf[2]->GetYaxis()->SetTitleOffset(0.74);
-  gf[2]->GetYaxis()->SetRangeUser(0,400);  // need to rewrite this
+  gf[2]->GetYaxis()->SetRangeUser(-10,210);  // need to rewrite this
   gf[2]->GetXaxis()->SetRangeUser(0,range_d*1.05); // need to rewrite this to sset the range of border effect.
   gf[2]->GetXaxis()->SetLabelSize(0.05);
   gf[2]->GetXaxis()->SetTitleSize(0.05);
@@ -931,8 +1149,10 @@ int main(int argc, char * argv[]) {
 
   c->cd(3);
   TPad *padcc2 = new TPad("padcc2", "padcc2", 0, 0, 1, 0.35);
-  padcc2->SetTopMargin(0);
-  padcc2->SetBottomMargin(0.2);
+  padcc2->SetTopMargin(0.00);
+  padcc2->SetBottomMargin(0.20);
+  padcc2->SetLeftMargin(0.16);   
+  padcc2->SetRightMargin(0.04); 
   padcc2->Draw();
   padcc2->cd();       // pad2 becomes the current pad
   g3->GetYaxis()->SetLabelSize(0.07);
