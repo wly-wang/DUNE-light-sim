@@ -12,6 +12,7 @@
 #include "photolibbuild_services_dune.fcl"
 #include "photpropservices_dune.fcl"
 #include "lightsource.fcl"
+#include "OpDetAnalyzer.fcl"
 
 
 process_name: SemiAnalyticalBuild
@@ -81,12 +82,14 @@ physics:
  analyzers:
  {
    pmtresponse: @local::dunefd_simphotoncounter    # defined in opticaldetectormodules_dune.fcl
+   # opanalyzer: @local::OpDetAnalyzer
  }
 
  #define the producer and filter modules for this path, order matters,
  #filters reject all following items.  see lines starting physics.producers below
  simulate: [ generator, largeant ]
- analyzeIt:  [ pmtresponse ]
+ analyzeIt:  [ pmtresponse ] 
+ # analyzeIt:  [ pmtresponse, opanalyzer]
  #define the output stream, there could be more than one if using filters
  stream1:  [ ]
 
@@ -96,7 +99,7 @@ physics:
 
  #end_paths is a keyword and contains the paths that do not modify the art::Event,
  #ie analyzers and output streams.  these all run simultaneously
- end_paths:     [analyzeIt, stream1]
+ end_paths:     [analyzeIt]
 }
 
 #block to define where the output goes.  if you defined a filter in the physics
@@ -107,7 +110,8 @@ outputs:
  out1:
  {
    module_type: RootOutput
-   fileName:    "notused.root" #default file name, can override from command line with -o or --output
+   fileName:    "my_art_events.root"  # ART event file (change name as needed)
+   
  }
 }
 
@@ -121,9 +125,14 @@ physics.producers.generator.FillTree: false # for efficiency
 ##### Parameter changes for the pmt respnse analyzer (simphotoncounter) #####
 physics.analyzers.pmtresponse.SavePhotonOrigins: true
 physics.analyzers.pmtresponse.MakeAllPhotonsTree: true
-physics.analyzers.pmtresponse.MakeDetectedPhotonsTree: false
-physics.analyzers.pmtresponse.MakeOpDetsTree: false
-physics.analyzers.pmtresponse.MakeOpDetEventsTree: false
+physics.analyzers.pmtresponse.MakeDetectedPhotonsTree: true
+physics.analyzers.pmtresponse.MakeOpDetsTree: true
+physics.analyzers.pmtresponse.MakeOpDetEventsTree: true
+
+# OpDetAnalyzer: read photons produced by Geant4 (largeant), not PDFastSim
+# physics.analyzers.opanalyzer.InputModule: ["largeant"]
+
+
 
 services.OpDetResponseInterface.ChannelConversion: "fast"
 #services.OpDetResponseInterface.ChannelConversion: "none"

@@ -11,9 +11,9 @@ nProcesses = 500
 # zVals = [35.1188, 83.9188, 146.719, 195.519, 267.509, 316.309, 379.109, 427.909, 499.899, 548.699, 611.499, 660.299]
 
 # For testing purposes, use a smaller set of points
-xVals=[50.]
-yVals=[31.1352]
-zVals=[732.289]
+xVals=[5.0]
+yVals=[3.11352]
+zVals=[73.2289]
 
 totalPositions = len(xVals) * len(yVals) * len(zVals)
 
@@ -57,7 +57,7 @@ for x in xVals:
                                     "-B /cvmfs,/home/s2106059,/opt,/run/user,/etc/hostname,/etc/hosts,/etc/krb5.conf "
                                     "/cvmfs/singularity.opensciencegrid.org/fermilab/fnal-dev-sl7:latest "
                                     "/bin/bash -lc "
-                                    f"\"source /home/s2106059/setup/dune_light_sim_v10_03_01d02_setup.sh; "
+                                    f"\"source /home/s2106059/setup/dune_light_sim_v10_16_00d00_setup.sh; "
                                     f"cd {jobDirectory}; "
                                     "echo Current directory: $(pwd); "
                                     "echo Starting job...; "
@@ -97,7 +97,7 @@ if len(pointList) > 0:
         jobScript.write("#$ -l h_vmem=8G\n")
         jobScript.write("source $HOME/setup/create_sl7_alias\n")
         jobScript.write("source $HOME/setup/activate_apptainer\n")
-        jobScript.write("source $HOME/setup/dune_light_sim_v10_03_01d02_setup.sh\n")
+        jobScript.write("source $HOME/setup/dune_light_sim_v10_16_00d00_setup.sh\n")
         jobScript.write("echo Starting job...\n")
         jobScript.write("lar -c ../protoduneHD_v6_refactored.fcl -n " +
                         f"{len(pointList)*100} &> log\n")
