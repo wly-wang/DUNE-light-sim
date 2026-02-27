@@ -21,6 +21,7 @@ EOF
 FCL_FILE=${FCL_FILE:-$INPUT_TAR_DIR_LOCAL/to_grid/dune10kt_v6_refactored_1x2x6_light_sim.fcl}
 DUNE_VERSION=${DUNE_VERSION:-v10_03_01d02}
 DUNE_QUALIFIER=${DUNE_QUALIFIER:-e26:prof}
+MYFILE=${MYFILE:-$INPUT_TAR_DIR_LOCAL/to_grid/myLightSourceSteering.fcl}
 
 # number of events to process from the input file
 if [ "$NUM_EVENTS" != "" ] ; then
@@ -45,8 +46,8 @@ fi
 # Setup DUNE environment
 source /cvmfs/dune.opensciencegrid.org/products/dune/setup_dune.sh
 setup dunesw "$DUNE_VERSION" -q "$DUNE_QUALIFIER"
-source $INPUT_TAR_DIR_LOCAL/dune_light_sim_v10_03_01d02/localProducts_larsoft_v10_03_01d02_e26_prof/setup
-mrbslp
+# source $INPUT_TAR_DIR_LOCAL/dune_light_sim_v10_03_01d02/localProducts_larsoft_v10_03_01d02_e26_prof/setup
+# mrbslp
 
 # Construct outFile from input $pfn 
 now=$(date -u +"%Y-%m-%dT_%H%M%SZ")

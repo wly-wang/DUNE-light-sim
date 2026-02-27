@@ -82,14 +82,13 @@ physics:
  analyzers:
  {
    pmtresponse: @local::dunefd_simphotoncounter    # defined in opticaldetectormodules_dune.fcl
-   # opanalyzer: @local::OpDetAnalyzer
+
  }
 
  #define the producer and filter modules for this path, order matters,
  #filters reject all following items.  see lines starting physics.producers below
  simulate: [ generator, largeant ]
- analyzeIt:  [ pmtresponse ] 
- # analyzeIt:  [ pmtresponse, opanalyzer]
+ analyzeIt:  [ pmtresponse ]
  #define the output stream, there could be more than one if using filters
  stream1:  [ ]
 
@@ -154,7 +153,7 @@ physics.producers.generator.SteeringFile:  "./myLightSourceSteering.txt"
 
 
 services.PhotonVisibilityService.StoreReflected: true
-services.PhotonVisibilityService.StoreReflT0: true
+services.PhotonVisibilityService.StoreReflT0: false
 services.PhotonVisibilityService.IncludePropTime: false
 physics.analyzers.pmtresponse.MakeLightAnalysisTree: false
 services.LArPropertiesService.LoadExtraMatProperties: true
