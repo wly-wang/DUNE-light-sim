@@ -56,7 +56,18 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
   const double L_abs = 2000.; //argon
 
   // special case: VerticalBorderCorrectionMode use Y direction only
+<<<<<<< HEAD
   bool fVerticalBorderCorrectionMode = false;
+=======
+  bool fVerticalBorderCorrectionMode = true;
+
+  // --- PD restriction and different parameterization method restriction ---
+  const double opdet_x_target = 0.05;     // cm
+  const double opdet_x_window = 0.05;    // keep |x - target| < window (tune this)
+  
+  const double z_min_keep = 1000.0;      // cm
+  const double z_max_keep = 4700.0;      // cm
+>>>>>>> 54aa778 (eddie updates merge)
 
   gRandom->SetSeed(0);
   //getting the pmt positions (y and z)
@@ -126,18 +137,42 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
     double posSource[3]={X, Y, Z};
     double num_phot_generated = genPhotons;
 
+<<<<<<< HEAD
     double distance_to_center = GetDistanceCenter(centerYZ, posSource[2], posSource[1]);
     //double distance_to_center_lateral = sqrt( pow(posSource[0] - x_anode, 2) + pow(posSource[2] - z_anode, 2));
 
     //std::cout << distance_to_center << std::endl;
     if(distance_to_center<=0) {
       std::cout << "Warning: distance to center < 0" << std::endl;
+=======
+    // Keep only photon origins in the desired Z window
+    if (posSource[2] < z_min_keep || posSource[2] > z_max_keep) continue;
+
+    // double distance_to_center = GetDistanceCenter(centerYZ, posSource[2], posSource[1]);
+    const double centerY = centerYZ[1];              // 697.17 in your code
+    double dT = fabs(posSource[1] - centerY);        // y-only transverse distance
+
+    // //std::cout << distance_to_center << std::endl;
+    // if(distance_to_center<=0) {
+    //   std::cout << "Warning: distance to center < 0" << std::endl;
+    //   continue;
+    // }
+
+        //std::cout << distance_to_center << std::endl;
+    if(dT<=0) {
+      std::cout << "Warning: dT < 0" << std::endl;
+>>>>>>> 54aa778 (eddie updates merge)
       continue;
     }
   
     //loop over the channels
     for(int i=0; i<numberDevices; i++) {
+<<<<<<< HEAD
       //if (i<479) continue;
+=======
+      // Keep only OpDets near x ~ 0
+      if (std::fabs(devx.at(i) - opdet_x_target) > opdet_x_window) continue;
+>>>>>>> 54aa778 (eddie updates merge)
 
       // // Modification requried from Users:
       // bool isDouble=false;
@@ -262,7 +297,12 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
         //v_d_center.push_back(distance_to_center_lateral); // used for GH curves fitting method.
         //v_d_center.push_back(abs(x_anode - posSource[0])); // used for interpolation method.
       //}else{
+<<<<<<< HEAD
         v_d_center.push_back(distance_to_center);
+=======
+        // v_d_center.push_back(distance_to_center);
+        v_d_center.push_back(dT);
+>>>>>>> 54aa778 (eddie updates merge)
       //}
 
       //if (devy.at(i) == Y && devz.at(i) == Z){
@@ -324,11 +364,16 @@ int main(int argc, char * argv[]) {
   double step_d = 50;
 
   const double FIT_MAX = 1000.0;   // only fit up to 600 cm
+<<<<<<< HEAD
   const double BORDER_FIT_MAX = 900.0;  // only use up to 600 cm of d_T in border-parameter fits
+=======
+  const double BORDER_FIT_MAX = 600.0;  // only use up to 600 cm of d_T in border-parameter fits
+>>>>>>> 54aa778 (eddie updates merge)
 
 
   bool isDouble=true;
   //Center distance bins
+<<<<<<< HEAD
   double range_d = 900; //400;
 
   // Modification requried from Users:
@@ -345,6 +390,15 @@ int main(int argc, char * argv[]) {
     std::copy(std::begin(range_d_array_temp), std::end(range_d_array_temp), std::begin(range_d_array));
   }
   // End.
+=======
+  double range_d =600; //400;
+
+  // Modification requried from Users:
+  const int M = 8; // for 75 cm bins
+  double range_d_array[M+1] = {0.,75.,150.,225.,300.,375.,450.,525.,600.};
+
+  // // End.
+>>>>>>> 54aa778 (eddie updates merge)
 
   //double delta_d = range_d/M;
   TH1D* h=new TH1D("","",range_d, 0, range_d*1.05);
@@ -454,7 +508,11 @@ int main(int argc, char * argv[]) {
   for(int i=0; i<v_distance.size(); i++){
 
     // Skip anything that's too far away (>1000cm)
+<<<<<<< HEAD
     if (v_distance[i] > 1000.) continue; 
+=======
+    //if (v_distance[i] > 1000.) continue; 
+>>>>>>> 54aa778 (eddie updates merge)
 
 
     double costheta = cos(3.1416*v_offset_angle.at(i)/180.);

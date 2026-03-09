@@ -2,3 +2,4 @@ process*
 job*
 .vscode
 .nfs*
+*.pdf
