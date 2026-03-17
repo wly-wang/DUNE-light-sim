@@ -75,13 +75,12 @@ Double_t GaisserHillas(double *x,double *par)
 }
 
 //Distance to the center in the Y-Z Plane
-double GetDistanceCenter(const double center[2], double z, double y){
-  //z = abs(z - center[1]) - center[1];
-  //y = abs(y) - center[0];
-  z -= center[1];
-  y -= center[0];
-
-  return  sqrt(y*y + z*z);
+double GetDistanceCenter(const double center[2], double z, double y) {
+  const double y0 = center[0];
+  const double z0 = center[1];
+  const double dy = y - y0;
+  const double dz = z - z0;
+  return std::sqrt(dy*dy + dz*dz);
 }
 
 // solid angle of rectanglular aperture

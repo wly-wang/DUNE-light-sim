@@ -47,7 +47,7 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
   // 8" PMT radius
   double b = 8*2.54/2.;
   // Y-Z coordinates of the active volume center
-  const double centerYZ[2] = {0, 697.17};
+  const double centerYZ[2] = {0, 2904};
 
   // Modification requried from Users:
   // LAr absorption length in cm
@@ -59,8 +59,8 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
   bool fVerticalBorderCorrectionMode = true;
 
   // --- PD restriction and different parameterization method restriction ---
-  const double opdet_x_target = 0.05;     // cm
-  const double opdet_x_window = 0.05;    // keep |x - target| < window (tune this)
+  const double opdet_x_target = 0.;     // cm
+  const double opdet_x_window = 1.;    // keep |x - target| < window (tune this)
   
   const double z_min_keep = 1000.0;      // cm
   const double z_max_keep = 4700.0;      // cm
@@ -137,20 +137,28 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
     if (posSource[2] < z_min_keep || posSource[2] > z_max_keep) continue;
 
     // double distance_to_center = GetDistanceCenter(centerYZ, posSource[2], posSource[1]);
-    const double centerY = centerYZ[1];              // 697.17 in your code
-    double dT = fabs(posSource[1] - centerY);        // y-only transverse distance
+    const double centerY = 0.0;   
+    // LArSoft VerticalBorderCorrectionMode:
+    // use only Y distance from detector center
+    double dT = std::abs(posSource[1] - centerY);
 
-    // //std::cout << distance_to_center << std::endl;
+    if (dT <= 0) {
+      std::cout << "Warning: dT <= 0" << std::endl;
+      continue;
+    }
+
+
+    //std::cout << distance_to_center << std::endl;
     // if(distance_to_center<=0) {
     //   std::cout << "Warning: distance to center < 0" << std::endl;
     //   continue;
     // }
 
-        //std::cout << distance_to_center << std::endl;
-    if(dT<=0) {
-      std::cout << "Warning: dT < 0" << std::endl;
-      continue;
-    }
+    //     //std::cout << distance_to_center << std::endl;
+    // if(dT<=0) {
+    //   std::cout << "Warning: dT < 0" << std::endl;
+    //   continue;
+    // }
   
     //loop over the channels
     for(int i=0; i<numberDevices; i++) {
@@ -180,7 +188,7 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
       //   std::cout << VUV_hits[i] << std::endl;
       // }
       
-      if(entries < min_number_entries) continue;
+      //if(entries < min_number_entries) continue;
 
       if (numberDevices > devx.size()) {
         std::cerr << "ERROR: numberDevices > number of detector positions!" << std::endl;
@@ -281,7 +289,7 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
         //v_d_center.push_back(abs(x_anode - posSource[0])); // used for interpolation method.
       //}else{
         // v_d_center.push_back(distance_to_center);
-        v_d_center.push_back(dT);
+      v_d_center.push_back(dT);
       //}
 
       //if (devy.at(i) == Y && devz.at(i) == Z){
@@ -475,7 +483,7 @@ int main(int argc, char * argv[]) {
     double temp = v_d_center.at(i);
     int k = std::lower_bound(range_d_array, range_d_array+M+1, temp) - range_d_array - 1;
     //int k = int(v_d_center.at(i)/delta_d);
-    if(k>=M) continue;
+    if (k < 0 || k >= M) continue;
     pdiff_d[j][k]->Fill(v_distance.at(i), v_hits.at(i)/v_rec_hits.at(i)*costheta);
     hd_centers[k]->Fill(v_d_center.at(i));
     h->Fill(v_d_center.at(i));
@@ -548,13 +556,24 @@ int main(int argc, char * argv[]) {
   const int dim = N_canvas.size();
   TGraphErrors *gr[N][M];
   TGraphErrors *grx[N][M];
+
+  for (int jj = 0; jj < N; ++jj) {
+    for (int kk = 0; kk < M; ++kk) {
+      gr[jj][kk] = nullptr;
+      grx[jj][kk] = nullptr;
+    }
+  }
+
   for(int k=0; k < M; k++){
     for(int j=0; j < N; j++){
       if(n_entries[j][k] > 0){
-        gr[j][k] = Profile_to_Graph(pdiff_dx[j][k], pdiff_d[j][k], j); // correction curves.
+        gr[j][k] = Profile_to_Graph(pdiff_dx[j][k], pdiff_d[j][k], j);
         gr[j][k]->SetLineColor(1 + j%9);
         gr[j][k]->SetMarkerColor(1 + j%9);
-        if(j==4) {gr[j][k]->SetLineColor(kOrange+7);gr[j][k]->SetMarkerColor(kOrange+7);}
+        if(j==4) {
+          gr[j][k]->SetLineColor(kOrange+7);
+          gr[j][k]->SetMarkerColor(kOrange+7);
+        }
         gr[j][k]->SetMarkerStyle(20 + j);
         gr[j][k]->SetMarkerSize(0.6);
       }
@@ -596,7 +615,6 @@ int main(int argc, char * argv[]) {
     int k = N_canvas.at(l);
     canvas1->cd(l + 1);
 
-    // comfortable pad margins so tick labels & titles fit
     gPad->SetLeftMargin(0.14);
     gPad->SetRightMargin(0.05);
     gPad->SetBottomMargin(0.16);
@@ -605,14 +623,12 @@ int main(int argc, char * argv[]) {
     gg0[l] = new TGraph(2, x_0, y_0);
     gg0[l]->SetTitle(title[k].c_str());
 
-    // bigger fonts for visibility
     gg0[l]->GetXaxis()->SetTitle("distance [cm]");
     gg0[l]->GetYaxis()->SetTitle("N_{hit} / N_{#Omega} / cos(#theta)");
 
-    // Setting dynamic Y axis range
     double yMax = 0.0;
     for (int j = 0; j < N; ++j) {
-      if (n_entries[j][k] <= 0 || !gr[j][k]) continue;
+      if (n_entries[j][k] <= 0 || gr[j][k] == nullptr) continue;
       int nPoints = gr[j][k]->GetN();
       for (int i = 0; i < nPoints; ++i) {
         double x, y;
@@ -621,12 +637,12 @@ int main(int argc, char * argv[]) {
         yMax = std::max(yMax, y + ey);
       }
     }
-    if (yMax <= 0) yMax = 1.0; // safety fallback
-    double headroom = 1.15;    // 15% padding on top
+
+    if (yMax <= 0) yMax = 1.0;
+    double headroom = 1.15;
 
     gg0[l]->GetXaxis()->SetRangeUser(0, d_max);
     gg0[l]->GetYaxis()->SetRangeUser(0, yMax * headroom);
-
 
     gg0[l]->GetXaxis()->SetLabelSize(0.045);
     gg0[l]->GetXaxis()->SetTitleSize(0.055);
@@ -642,17 +658,16 @@ int main(int argc, char * argv[]) {
       double pars_GH[4]  = {-999, -999, -999, -999};
       double epars_GH[4] = {-999, -999, -999, -999};
 
-      if (n_entries[j][k] > 0) {
+      if (n_entries[j][k] > 0 && gr[j][k] != nullptr) {
         gr[j][k]->Draw("P");
         gr[j][k]->Fit(GH[j][k], options[j].c_str(), "", min_x[j][k], max_x[j][k]);
 
         double fit_lo = min_x[j][k];
-        double fit_hi = std::min(FIT_MAX, max_x[j][k]);  // clamp at 600
+        double fit_hi = std::min(FIT_MAX, max_x[j][k]);
 
         if (fit_lo < fit_hi) {
           gr[j][k]->Fit(GH[j][k], options[j].c_str(), "", fit_lo, fit_hi);
         }
-        
 
         GH[j][k]->GetParameters(pars_GH);
         GH[j][k]->SetParameters(pars_GH);
@@ -675,16 +690,17 @@ int main(int argc, char * argv[]) {
       ep2[l].push_back(epars_GH[1]);
       ep3[l].push_back(epars_GH[2]);
 
-      if (l == 0) {
+      if (l == 0 && n_entries[j][k] > 0 && gr[j][k] != nullptr) {
         int a_min = j * delta_angulo;
         int a_max = (j + 1) * delta_angulo;
         sprintf(label[j], "#theta #in [%i, %i] deg", a_min, a_max);
         leg1->AddEntry(gr[j][k], label[j], "p");
       }
-    }
+    } // end j loop
 
     if (l == 0) leg1->Draw();
-  }
+
+  } // end l loop
 
   canvas1->Update();
   canvas1->Modified();
@@ -720,7 +736,7 @@ int main(int argc, char * argv[]) {
     bool hasAny = false;
     for (int ii = 0; ii < (int)chosenK.size(); ++ii) {
       int k = chosenK[ii];
-      if (n_entries[j][k] > 0) { hasAny = true; break; }
+      if (n_entries[j][k] > 0 && gr[j][k] != nullptr) { hasAny = true; break; }
     }
     if (!hasAny) continue;
 
@@ -756,7 +772,7 @@ int main(int argc, char * argv[]) {
     }
 
     if (yMax <= 0) yMax = 1.0;   // fallback
-    double headroom = 1.15;
+    double headroom = 1.25;
     frame->GetYaxis()->SetRangeUser(0., yMax * headroom);
 
     frame->Draw("AXIS");
