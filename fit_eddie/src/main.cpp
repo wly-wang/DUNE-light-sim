@@ -40,7 +40,7 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
        bool IsSphere, std::vector<double> &v6, std::vector<double> &v7) {
   std::cout<<"calcula function ..."<<std::endl;
 
-  double min_number_entries = 20;
+  double min_number_entries = 50;
   // width and height in cm of single arapuca active window
   double arapuca_w = 10;
   double arapuca_h = 47.75;
@@ -188,7 +188,7 @@ void calcula(std::string positions, std::string input_file, std::vector<double> 
       //   std::cout << VUV_hits[i] << std::endl;
       // }
       
-      //if(entries < min_number_entries) continue;
+      // if(entries < min_number_entries) continue;
 
       if (numberDevices > devx.size()) {
         std::cerr << "ERROR: numberDevices > number of detector positions!" << std::endl;
@@ -468,6 +468,117 @@ int main(int argc, char * argv[]) {
 
   std::vector<double> v_distance, v_hits, v_rec_hits, v_offset_angle, v_d_center, v_x, v_devx;
   calcula(positions, input_file, v_distance, v_hits, v_rec_hits, v_offset_angle, v_d_center, IsRectangular, IsSphere, v_x, v_devx);
+
+    // ============================================================
+  // Debug the spread in the FIRST distance bin for theta in [0,10)
+  // ============================================================
+  {
+    const double theta_lo = 0.0;
+    const double theta_hi = 10.0;
+    const double dist_lo  = 0.0;
+    const double dist_hi  = 50.0;
+
+    std::cout << "\n============================================================\n";
+    std::cout << "Manual spread check for first bin:\n";
+    std::cout << "theta in [" << theta_lo << ", " << theta_hi << ") deg, "
+              << "distance in [" << dist_lo << ", " << dist_hi << ") cm\n";
+    std::cout << "Quantity = (Nhit / Nomega) * cos(theta)\n";
+    std::cout << "============================================================\n";
+
+    for (int kdbg = 0; kdbg < M; ++kdbg) {
+      const double dT_lo = range_d_array[kdbg];
+      const double dT_hi = range_d_array[kdbg + 1];
+
+      int n_sel = 0;
+      double sum = 0.0;
+      double sum2 = 0.0;
+      double vmin = 1e99;
+      double vmax = -1e99;
+
+      for (size_t i = 0; i < v_distance.size(); ++i) {
+        const double theta = v_offset_angle[i];
+        const double dist  = v_distance[i];
+        const double dT    = v_d_center[i];
+
+        if (theta < theta_lo || theta >= theta_hi) continue;
+        if (dist  < dist_lo  || dist  >= dist_hi)  continue;
+        if (dT    < dT_lo    || dT    >= dT_hi)    continue;
+        if (v_rec_hits[i] <= 0.0) continue;
+
+        const double costheta = std::cos(TMath::DegToRad() * theta);
+        const double ratio = (v_hits[i] / v_rec_hits[i]) * costheta;
+
+        n_sel++;
+        sum  += ratio;
+        sum2 += ratio * ratio;
+        if (ratio < vmin) vmin = ratio;
+        if (ratio > vmax) vmax = ratio;
+      }
+
+      std::cout << "\nd_T bin [" << dT_lo << ", " << dT_hi << ") cm\n";
+
+      if (n_sel == 0) {
+        std::cout << "  entries = 0\n";
+        continue;
+      }
+
+      const double mean = sum / n_sel;
+      double var = (sum2 / n_sel) - mean * mean;
+      if (var < 0) var = 0; // numerical safety
+      const double rms = std::sqrt(var);
+
+      std::cout << "  entries = " << n_sel << "\n";
+      std::cout << "  mean    = " << mean << "\n";
+      std::cout << "  rms     = " << rms << "\n";
+      std::cout << "  min     = " << vmin << "\n";
+      std::cout << "  max     = " << vmax << "\n";
+    }
+
+    // Also print the SAME thing without splitting in d_T
+    {
+      int n_sel = 0;
+      double sum = 0.0;
+      double sum2 = 0.0;
+      double vmin = 1e99;
+      double vmax = -1e99;
+
+      for (size_t i = 0; i < v_distance.size(); ++i) {
+        const double theta = v_offset_angle[i];
+        const double dist  = v_distance[i];
+
+        if (theta < theta_lo || theta >= theta_hi) continue;
+        if (dist  < dist_lo  || dist  >= dist_hi)  continue;
+        if (v_rec_hits[i] <= 0.0) continue;
+
+        const double costheta = std::cos(TMath::DegToRad() * theta);
+        const double ratio = (v_hits[i] / v_rec_hits[i]) * costheta;
+
+        n_sel++;
+        sum  += ratio;
+        sum2 += ratio * ratio;
+        if (ratio < vmin) vmin = ratio;
+        if (ratio > vmax) vmax = ratio;
+      }
+
+      std::cout << "\nALL d_T combined\n";
+      if (n_sel == 0) {
+        std::cout << "  entries = 0\n";
+      } else {
+        const double mean = sum / n_sel;
+        double var = (sum2 / n_sel) - mean * mean;
+        if (var < 0) var = 0;
+        const double rms = std::sqrt(var);
+
+        std::cout << "  entries = " << n_sel << "\n";
+        std::cout << "  mean    = " << mean << "\n";
+        std::cout << "  rms     = " << rms << "\n";
+        std::cout << "  min     = " << vmin << "\n";
+        std::cout << "  max     = " << vmax << "\n";
+      }
+    }
+
+    std::cout << "============================================================\n\n";
+  }
 
   for(int i=0; i<v_distance.size(); i++){
 

@@ -2,4 +2,4 @@ source makeChannelMap.sh
 
 make
 
-bin/FastOpticalValidation ../merge/output.root
+bin/FastOpticalValidation ../merge_eddie/output.root

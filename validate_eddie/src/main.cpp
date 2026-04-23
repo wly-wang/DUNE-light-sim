@@ -342,13 +342,17 @@ const double d_max = 365.;
 const double step_d = 1;
 // optical detector list
 const std::string pmtlistname = "./protodune_optical_mapping.txt"; // DUNE modified geometry
-const double opdet_x_target = 0.;
-const double opdet_x_window = 1.;
+
 
 // Section for different border corrections
 // source Z acceptance window 
 const double z_min_keep = 1000.0;  // cm
 const double z_max_keep = 4700.0;  // cm
+
+// --- PD restriction and different parameterization method restriction ---
+const double opdet_x_target = 0.;     // cm
+const double opdet_x_window = 1.;    // keep |x - target| < window (tune this)
+bool printed_debug = false;
 
 // input filename
 std::string inputfilename = "./output.root";
@@ -378,7 +382,7 @@ int main(int argc, char * argv[]){
     while(!myfile.eof()) {
         double num_pmt, x_pmt, y_pmt, z_pmt;
         if (myfile >> num_pmt >> x_pmt >> y_pmt >> z_pmt) {
-          if (std::abs(x_pmt - opdet_x_target) > opdet_x_window) continue;
+          if (std::fabs(x_pmt - opdet_x_target) > opdet_x_window) continue;
           std::vector<double> line_data({num_pmt, x_pmt, y_pmt, z_pmt});
           optical_detector_positions.push_back(line_data);
         }else{ break; }
@@ -415,6 +419,11 @@ int main(int argc, char * argv[]){
   double sum_hits_800_1000      = 0.0; // sum of VUV_hits for avg calc
   double sum_hits_below50_800_1000 = 0.0; // sum of VUV_hits for the ones < 50
 
+  int nPairs_all = 0;
+  int nPairs_below10_all = 0;
+  double sum_hits_all = 0.0;
+  double sum_hits_below10_all = 0.0;
+
 
   // open file
   TFile* f = new TFile(inputfilename.c_str());
@@ -434,9 +443,19 @@ int main(int argc, char * argv[]){
 
   // loop through TTree
   TH2F* h_truePE_vs_predPE = new TH2F("h_truePE_vs_predPE", "", 50, 0, 3.5e6, 50, 0, 3.5e6);
+
+  std::cout << "DEBUG: tree entries = " << tree->GetEntries() << std::endl;
   for(int n=0; n < tree->GetEntries(); n++) {
 
     tree->GetEntry(n);
+
+    if (n < 5) {
+      std::cout << "DEBUG event " << n
+                << " X=" << X
+                << " Y=" << Y
+                << " Z=" << Z
+                << std::endl;
+    }
 
     // apply Z restriction used in the GH fit
     if (Z < z_min_keep || Z > z_max_keep) continue;
@@ -456,8 +475,7 @@ int main(int argc, char * argv[]){
             std::pow(posSource[2] - z_foils, 2)
         );
     }
-    bool debug = false;
-    if (debug) std::cout << "Scintillation point --> (x, y, z) = " << posSource[0] << "  " << posSource[1] << "  " << posSource[2] << std::endl;
+    
 
     // ****
     // Calculate amount of light:
@@ -468,24 +486,43 @@ int main(int argc, char * argv[]){
     double total_pe_truth(0), total_pe_prediction(0);
     // double total_pe_prediction = 0;
     // double total_pe_truth = 0;
+    
     for (int nPMT = 0; nPMT < numberPMTs; nPMT++) {
-      //std::cout << "channel started" << std::endl;
+      TVector3 ScintPoint(posSource[0], posSource[1], posSource[2]);
 
-      // get Scintpoint
-      TVector3 ScintPoint(posSource[0],posSource[1],posSource[2]);
-      // get OpDetPoint
       if (nPMT >= numberDevices) continue;
-      TVector3 OpDetPoint(optical_detector_positions.at(nPMT).at(1),optical_detector_positions.at(nPMT).at(2),optical_detector_positions.at(nPMT).at(3));
 
-      if (n == 0 && nPMT < 10) {
-        std::cout << "nPMT=" << nPMT
-                  << " hits=" << VUV_hits[nPMT]
-                  << " OpDetPoint=(" << OpDetPoint.X() << ", "
+      TVector3 OpDetPoint(
+        optical_detector_positions.at(nPMT).at(1),
+        optical_detector_positions.at(nPMT).at(2),
+        optical_detector_positions.at(nPMT).at(3)
+      );
+
+      if (!printed_debug && nPMT < 10) {
+        int detID = static_cast<int>(optical_detector_positions.at(nPMT).at(0));
+
+        std::cout << "event=" << n
+                  << " local=" << nPMT
+                  << " globalID=" << detID
+                  << " hits_local=" << VUV_hits[nPMT];
+
+        if (detID >= 0 && detID < numberDevices) {
+          std::cout << " hits_global=" << VUV_hits[detID];
+        } else {
+          std::cout << " hits_global=OUT_OF_RANGE";
+        }
+
+        std::cout << " OpDetPoint=("
+                  << OpDetPoint.X() << ", "
                   << OpDetPoint.Y() << ", "
-                  << OpDetPoint.Z() << ")\n";
+                  << OpDetPoint.Z() << ")"
+                  << std::endl;
+
+        if (nPMT == 9) printed_debug = true;
       }
 
       // orientation hack
+
       int op_channel_orientation = 0;
       // if (abs(OpDetPoint[1]) > 730) op_channel_orientation = 1; //lateral
       // else op_channel_orientation = 0;
@@ -527,18 +564,13 @@ int main(int argc, char * argv[]){
       double nPhotons_solid = VUVHits(genPhotons,ScintPoint,OpDetPoint,OpDetType,cosine,theta,distance,j);
       double distance_vuv = sqrt(pow(ScintPoint[0] - OpDetPoint[0],2) + pow(ScintPoint[1] - OpDetPoint[1],2) + pow(ScintPoint[2] - OpDetPoint[2],2));
 
-      // --- distance band study: 800-1000 cm ---
-      bool inFarBin = (distance >= 800 && distance < 1000);
-      if (inFarBin) {
-          nPairs_800_1000++;
+      // --- ALL-range hit stats ---
+      nPairs_all++;
+      sum_hits_all += VUV_hits[nPMT];
 
-          // accumulate total hits for averaging
-          sum_hits_800_1000 += VUV_hits[nPMT];
-
-          if (VUV_hits[nPMT] < 50) {
-              nPairs_below50_800_1000++;
-              sum_hits_below50_800_1000 += VUV_hits[nPMT];
-          }
+      if (VUV_hits[nPMT] < 10) {
+          nPairs_below10_all++;
+          sum_hits_below10_all += VUV_hits[nPMT];
       }
 
       // if (VUV_hits[nPMT] < 100) continue;
@@ -577,6 +609,31 @@ int main(int argc, char * argv[]){
     //std::cout<< total_pe_prediction << " " << total_pe_truth << std::endl;
     h_truePE_vs_predPE->Fill(total_pe_truth, total_pe_prediction);
   } // end of loop over points
+
+  std::cout << "\n=== ALL-range hit stats ===" << std::endl;
+  std::cout << "Total pairs across all distances: " << nPairs_all << std::endl;
+  std::cout << "Pairs with VUV_hits < 10: " << nPairs_below10_all << std::endl;
+
+      if (nPairs_all > 0) {
+          std::cout << "Fraction with VUV_hits < 10: "
+                    << double(nPairs_below10_all) / double(nPairs_all)
+                    << std::endl;
+          std::cout << "Average VUV_hits over ALL pairs: "
+                    << sum_hits_all / nPairs_all
+                    << std::endl;
+      } else {
+          std::cout << "Fraction with VUV_hits < 10: n/a" << std::endl;
+          std::cout << "Average VUV_hits over ALL pairs: n/a" << std::endl;
+      }
+
+      if (nPairs_below10_all > 0) {
+          std::cout << "Average VUV_hits for the <10 group: "
+                    << sum_hits_below10_all / nPairs_below10_all
+                    << std::endl;
+      } else {
+          std::cout << "Average VUV_hits for the <10 group: n/a" << std::endl;
+      }
+      std::cout << "===========================" << std::endl;
 
   std::cout << "\n=== 800–1000 cm distance band stats ===" << std::endl;
   std::cout << "Total pairs in band: " << nPairs_800_1000 << std::endl;
@@ -647,12 +704,13 @@ int main(int argc, char * argv[]){
   TProfile* profile = new TProfile("","", n_bins, edges, "s");
 
   // populate profile
-  for(int i=0; i < v_prop_dist.size(); i++) {
-    if (v_prop_dist[i] > VALID_MAX) continue;
-    double discrepancy = (v_hits_geo[i] - v_hits_sim[i]) / v_hits_sim[i];
-    double weight = v_hits_sim[i];
-    profile->Fill(v_prop_dist[i],discrepancy, weight);
-    //profile->Fill(v_r[i],discrepancy, weight);
+  for (int i = 0; i < v_prop_dist.size(); i++) {
+      if (v_prop_dist[i] > VALID_MAX) continue;
+
+      double discrepancy = (v_hits_geo[i] - v_hits_sim[i]) / v_hits_sim[i];
+      double weight = v_hits_sim[i];
+      // std::cout << "v_hits_sim... DEBUG: " << weight << std::endl;
+      profile->Fill(v_prop_dist[i], discrepancy, weight);
   }
 
   // another profile for points that has d_T <= 600cm
@@ -661,12 +719,12 @@ int main(int argc, char * argv[]){
   TProfile* profile_core = new TProfile("","", n_bins, edges, "s");
 
   for (int i = 0; i < v_prop_dist.size(); i++) {
-      if (v_prop_dist[i] > VALID_MAX) continue; // same overall distance sanity cut
-      if (v_r[i] > DT_CUTOFF) continue;         // <-- the new transverse cut d_T <= 600
+      if (v_prop_dist[i] > VALID_MAX) continue;
+      if (v_r[i] > DT_CUTOFF) continue;
+      if (v_hits_sim[i] <= 0) continue;
 
       double discrepancy = (v_hits_geo[i] - v_hits_sim[i]) / v_hits_sim[i];
-      double weight      = v_hits_sim[i];
-
+      double weight = v_hits_sim[i];
       profile_core->Fill(v_prop_dist[i], discrepancy, weight);
   }
 
@@ -674,7 +732,7 @@ int main(int argc, char * argv[]){
   // extract points from profile
   std::vector<double> r_values, r_values_error, mean, rms;
 
-  int min_entries = 100; // optional safety cut
+  int min_entries = 50; // optional safety cut
   for (int i = 1; i <= n_bins; ++i) {
     if (profile->GetBinEntries(i) < min_entries) continue;  // optional
 
@@ -726,17 +784,17 @@ int main(int argc, char * argv[]){
 
   //gr1->GetXaxis()->SetTitle("x [cm]");
 
-  TString type = "single-sided supercells";//double-sided supercells; single-sided supercells
+  TString type = "double-sided X-ARAPUCAs";//double-sided supercells; single-sided supercells
   //TString type = "X-ARAPUCA";//"double-shift WLS light guides"; X-ARAPUCA
 
   gr1->GetXaxis()->SetTitle("distance [cm]");
   //gr1->GetXaxis()->SetTitle("d_{T} [cm]");
   gr1->GetYaxis()->SetTitle("N_{#gamma} - N_{Geant4} / N_{Geant4}");
-  gr1->SetTitle("protoDUNE-hd: "+type);
+  gr1->SetTitle("DUNE 10kt FD-HD: "+type);
 
   gr1->GetXaxis()->SetRangeUser(0,1000);
   //gr1->GetXaxis()->SetRangeUser(0,365);
-  gr1->GetYaxis()->SetRangeUser(-0.5,0.5);
+  gr1->GetYaxis()->SetRangeUser(-10000,10000);
 
 
   //gg->GetYaxis()->SetLabelSize(0.05);
@@ -797,7 +855,7 @@ int main(int argc, char * argv[]){
   // extract points from profile_core (d_T <= 600 cm only)
   std::vector<double> r_values_core, r_values_error_core, mean_core, rms_core;
 
-  int min_entries_core = 100; // same stat cut
+  int min_entries_core = 50; // same stat cut
   for (int iBin = 1; iBin <= n_bins; ++iBin) {
     if (profile_core->GetBinEntries(iBin) < min_entries_core) continue;
 
