@@ -693,9 +693,8 @@ int main(int argc, char * argv[]){
   const double VALID_MAX = 1000.0; //hard cap for validation calculation
 
   const Double_t edges[] = {
-    0,   60, 120, 180, 240, 300,
-    360, 420, 480, 540, 600, // 10 bins up to 600
-    800, 1000                // 2 more bins → total 12
+    20, 50, 100, 200, 300, 400,
+    500, 600, 800, 1000                // 2 more bins → total 12
   };
   const int n_bins = sizeof(edges)/sizeof(edges[0]) - 1;
 

@@ -23,6 +23,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <map>
+#include <limits>
 
 #include "functions.h"
 
@@ -54,19 +56,20 @@ static const double radius = 8*2.54/2.;
 static const int OpDetType = 1;             // 0=disk, 1=rectangular, 2=dome
 static const bool IsRectangular = true;
 static const bool IsSphere = false;
-static const bool fVerticalBorderCorrectionMode = true;
+static const bool fVerticalBorderCorrectionMode = false;
 static const bool fUseQuadraticNmax = false;
 static const bool isDouble = true;
 
-static const double centerY = 0.0;         // fit-side vertical border center
 static const double y_foils = 0.0;         // validation-side equivalent center
-static const double z_foils = 2904.0;      // only used if radial mode is enabled
+static const double z_foils = 600.;      // only used if radial mode is enabled
 static const double x_foils = 0.0;
+static const double centerY = 0.0;         // fit-side vertical border center
+static const double border_center[2] = {y_foils, z_foils};  // {y0, z0} This is the yz plane center for defining the parameterization
 
 static const double opdet_x_target = 0.0;
 static const double opdet_x_window = 1.0;
-static const double z_min_keep = 1000.0;
-static const double z_max_keep = 4700.0;
+static const double z_min_keep = 0.;
+static const double z_max_keep = 300.;
 static const int kMaxDevices = 6000;
 
 
@@ -161,9 +164,15 @@ PairData BuildPairData(const std::string& positions, const std::string& input_fi
     if (numberDevices > (int)dm.x.size()) continue;
 
     double posSource[3] = {X, Y, Z};
+    if (posSource[0] <= 10.0) continue;
     if (posSource[2] < z_min_keep || posSource[2] > z_max_keep) continue;
 
-    double dT = std::abs(posSource[1] - centerY);
+    double dT = 0.0;
+    if (fVerticalBorderCorrectionMode) {
+      dT = std::abs(posSource[1] - centerY);
+    } else {
+      dT = GetDistanceCenter(border_center, posSource[2], posSource[1]);
+    }
     if (dT <= 0) continue;
 
     for (int i = 0; i < numberDevices; ++i) {
@@ -255,7 +264,7 @@ int VUVHitsPredicted(const int &Nphotons_created,
   if (fVerticalBorderCorrectionMode) {
     r_distance = std::abs(ScintPoint[1] - centerY);
   } else {
-    r_distance = std::sqrt(std::pow(ScintPoint[1] - y_foils, 2) + std::pow(ScintPoint[2] - z_foils, 2));
+    r_distance = GetDistanceCenter(border_center, ScintPoint[2], ScintPoint[1]);
   }
 
   double pars[4] = {g_fit_p1.at(j), g_fit_p2.at(j), g_fit_p3.at(j), g_fit_p4.at(j)};
@@ -285,6 +294,12 @@ void RunValidation(const std::string& inputfilename, const std::string& position
   std::vector<double> v_r;
   std::vector<double> v_prop_dist;
 
+  std::vector<double> v_total_truth;
+  std::vector<double> v_total_pred;
+  std::vector<double> v_source_X;
+  std::vector<double> v_source_Y;
+  std::vector<double> v_source_Z;
+
   TFile* f = new TFile(inputfilename.c_str());
   TTree *tree = (TTree *)f->Get("myTree");
   if (!tree) {
@@ -304,23 +319,27 @@ void RunValidation(const std::string& inputfilename, const std::string& position
   tree->SetBranchAddress("Vis_hits", Vis_hits);
   tree->SetBranchAddress("genPhotons", &genPhotons);
 
-  TH2F* h_truePE_vs_predPE = new TH2F("h_truePE_vs_predPE", "", 50, 0, 2.1e6, 50, 0, 2.1e6);
+  TH2F* h_truePE_vs_predPE = new TH2F("h_truePE_vs_predPE", "", 50, 0, 1.6e6, 50, 0, 1.6e6);
 
   TH1D* h_tot_truth = new TH1D(
-  "h_tot_truth", "", 120, 0, 2.1e6
+  "h_tot_truth", "", 120, 0, 1.6e6
   );
   TH1D* h_tot_pred = new TH1D(
-  "h_tot_pred", "", 120, 0, 2.1e6
+  "h_tot_pred", "", 120, 0, 1.6e6
   );
 
   for (int n = 0; n < tree->GetEntries(); ++n) {
     tree->GetEntry(n);
+    if (X <= 10.0) continue;
     if (Z < z_min_keep || Z > z_max_keep) continue;
 
     double posSource[3] = {X, Y, Z};
-    double R = fVerticalBorderCorrectionMode
-      ? std::abs(posSource[1] - centerY)
-      : std::sqrt(std::pow(posSource[1] - y_foils,2) + std::pow(posSource[2] - z_foils,2));
+    double R = 0.0;
+    if (fVerticalBorderCorrectionMode) {
+      R = std::abs(posSource[1] - centerY);
+    } else {
+      R = GetDistanceCenter(border_center, posSource[2], posSource[1]);
+    }
 
     double total_pe_truth = 0.0;
     double total_pe_prediction = 0.0;
@@ -347,9 +366,9 @@ void RunValidation(const std::string& inputfilename, const std::string& position
       if (j >= N) j = N - 1;
 
       double nPhotons_solid = VUVHitsPredicted(genPhotons, ScintPoint, OpDetPoint, OpDetType, cosine, theta, distance, j);
-
       total_pe_prediction += nPhotons_solid;
       total_pe_truth += VUV_hits[detID];
+
       v_hits_sim.push_back(VUV_hits[detID]);
       v_hits_geo.push_back(nPhotons_solid);
       v_r.push_back(R);
@@ -358,10 +377,11 @@ void RunValidation(const std::string& inputfilename, const std::string& position
 
     h_tot_truth->Fill(total_pe_truth);
     h_tot_pred->Fill(total_pe_prediction);
-    std::vector<double> v_total_truth;
-    std::vector<double> v_total_pred;
     v_total_truth.push_back(total_pe_truth);
     v_total_pred.push_back(total_pe_prediction);
+    v_source_X.push_back(X);
+    v_source_Y.push_back(Y);
+    v_source_Z.push_back(Z);
 
     h_truePE_vs_predPE->Fill(total_pe_truth, total_pe_prediction);
   }
@@ -386,24 +406,21 @@ void RunValidation(const std::string& inputfilename, const std::string& position
   std::cout << "N truth totals in band = " << n_truth_band << "\n";
   std::cout << "N pred totals in band  = " << n_pred_band << "\n";
 
-  for (size_t i = 0; i < v_total_pred.size(); ++i) {
-    if (v_total_pred[i] >= 1.3e6 && v_total_pred[i] <= 1.8e6) {
-      n_pred_band++;
-    std::cout << "pred total[" << i << "] = " << v_total_pred[i] << "\n";
-    }
-  }
-
   std::cout << "N truth totals in band = " << n_truth_band << "\n";
   std::cout << "N pred totals in band  = " << n_pred_band << "\n";
 
-  if (total_pe_truth > 1.8e6) {
-  std::cout << "high-total source: X=" << X
-            << " Y=" << Y
-            << " Z=" << Z
-            << " truth=" << total_pe_truth
-            << " pred=" << total_pe_prediction
-            << "\n";
-}
+  std::cout << "\n=== sources with truth total > 1.8e6 ===\n";
+  for (size_t i = 0; i < v_total_truth.size(); ++i) {
+    if (v_total_truth[i] > 1.8e6) {
+      std::cout << "source " << i
+                << " : X=" << v_source_X[i]
+                << " Y=" << v_source_Y[i]
+                << " Z=" << v_source_Z[i]
+                << " truth=" << v_total_truth[i]
+                << " pred=" << v_total_pred[i]
+                << "\n";
+    }
+  }
 
 
   gSystem->Exec(("mkdir -p " + save_dir).c_str());
@@ -415,7 +432,7 @@ void RunValidation(const std::string& inputfilename, const std::string& position
   h_truePE_vs_predPE->GetYaxis()->SetTitle("total PE prediction");
   h_truePE_vs_predPE->SetStats(0);
   h_truePE_vs_predPE->Draw("colz");
-  TLine* line1 = new TLine(0,0,2.1e6,2.1e6);
+  TLine* line1 = new TLine(0,0,1.6e6,1.6e6);
   line1->SetLineColor(kRed);
   line1->Draw("same");
   ctest->SaveAs((save_dir + "/validation_truth_vs_pred.pdf").c_str());
@@ -477,7 +494,7 @@ void RunValidation(const std::string& inputfilename, const std::string& position
   for (size_t i = 0; i < v_prop_dist.size(); ++i) {
     if (v_prop_dist[i] > VALID_MAX) continue;
     if (v_hits_sim[i] <= 0) continue;
-    if (v_prop_dist[i] < 1.0) continue;
+    if (v_prop_dist[i] < 15.0) continue;
 
     double discrepancy = (v_hits_geo[i] - v_hits_sim[i]) / v_hits_sim[i];
     double weight = v_hits_sim[i];
@@ -494,38 +511,118 @@ void RunValidation(const std::string& inputfilename, const std::string& position
   int first_bin_count = 0;
   double first_bin_sum_Nhit = 0.0;
 
-  std::cout << "\n=== DEBUG: ultra-close entries in first bin (distance < 1 cm) ===" << std::endl;
+  // std::cout << "\n=== DEBUG: ultra-close entries in first bin (distance < 1 cm) ===" << std::endl;
 
-  int n_ultraclose = 0;
-  double sum_ultraclose_weight = 0.0;
+  // int n_ultraclose = 0;
+  // double sum_ultraclose_weight = 0.0;
 
-  for (size_t i = 0; i < v_prop_dist.size(); ++i) {
-    if (v_prop_dist[i] < edges[0] || v_prop_dist[i] >= edges[1]) continue;
-    if (v_hits_sim[i] <= 0) continue;
-    if (v_prop_dist[i] >= 1.0) continue;
+  // for (size_t i = 0; i < v_prop_dist.size(); ++i) {
+  //   if (v_prop_dist[i] < edges[0] || v_prop_dist[i] >= edges[1]) continue;
+  //   if (v_hits_sim[i] <= 0) continue;
+  //   if (v_prop_dist[i] >= 1.0) continue;
     
 
-    double discrepancy = (v_hits_geo[i] - v_hits_sim[i]) / v_hits_sim[i];
+  //   double discrepancy = (v_hits_geo[i] - v_hits_sim[i]) / v_hits_sim[i];
 
-    n_ultraclose++;
-    sum_ultraclose_weight += v_hits_sim[i];
+  //   n_ultraclose++;
+  //   sum_ultraclose_weight += v_hits_sim[i];
 
-    std::cout
-      << " entry " << n_ultraclose
-      << " : distance=" << v_prop_dist[i]
-      << " cm"
-      << " , N_hit=" << v_hits_sim[i]
-      << " , N_omega=" << v_hits_geo[i]
-      << " , bias=" << discrepancy
-      << " , dT=" << v_r[i]
-      << std::endl;
-  }
+  //   std::cout
+  //     << " entry " << n_ultraclose
+  //     << " : distance=" << v_prop_dist[i]
+  //     << " cm"
+  //     << " , N_hit=" << v_hits_sim[i]
+  //     << " , N_omega=" << v_hits_geo[i]
+  //     << " , bias=" << discrepancy
+  //     << " , dT=" << v_r[i]
+  //     << std::endl;
+  // }
 
-  std::cout << "Number of entries (<1 cm) in first bin = "
-            << n_ultraclose << std::endl;
-  std::cout << "Total N_hit for those entries = "
-            << sum_ultraclose_weight << std::endl;
-  std::cout << "====================================================\n" << std::endl;
+  // std::cout << "Number of entries (<1 cm) in first bin = "
+  //           << n_ultraclose << std::endl;
+  // std::cout << "Total N_hit for those entries = "
+  //           << sum_ultraclose_weight << std::endl;
+  // std::cout << "====================================================\n" << std::endl;
+  double second_bin_lo = edges[1];
+  double second_bin_hi = edges[2];
+
+  int second_bin_count = 0;
+  double second_bin_sum_weight = 0.0;
+  double second_bin_weighted_bias_num = 0.0;
+
+  // std::cout << "\n=== DEBUG: entries in SECOND validation bin (100-200 cm) ===" << std::endl;
+
+  // for (size_t i = 0; i < v_prop_dist.size(); ++i) {
+  //   if (v_prop_dist[i] < second_bin_lo || v_prop_dist[i] >= second_bin_hi) continue;
+  //   if (v_hits_sim[i] <= 0) continue;
+
+  //   double discrepancy = (v_hits_geo[i] - v_hits_sim[i]) / v_hits_sim[i];
+  //   double weight = v_hits_sim[i];
+
+  //   second_bin_count++;
+  //   second_bin_sum_weight += weight;
+  //   second_bin_weighted_bias_num += weight * discrepancy;
+  // }
+
+  // std::cout << "Number of entries in second bin = " << second_bin_count << std::endl;
+  // std::cout << "Total weight in second bin = " << second_bin_sum_weight << std::endl;
+  // if (second_bin_sum_weight > 0) {
+  //   std::cout << "Weighted mean bias in second bin = "
+  //             << second_bin_weighted_bias_num / second_bin_sum_weight
+  //             << std::endl;
+  // }
+  // std::cout << "\n=== SECOND BIN SUMMARY by dT (100-200 cm) ===" << std::endl;
+
+  // struct BinSummary {
+  //   int n = 0;
+  //   double sum_dist = 0.0;
+  //   double sum_hit = 0.0;
+  //   double sum_pred = 0.0;
+  //   double sum_bias = 0.0;
+  //   double min_bias = std::numeric_limits<double>::max();
+  //   double max_bias = -std::numeric_limits<double>::max();
+  // };
+
+  // std::map<int, BinSummary> summary_by_dT;
+
+  // // use rounded dT*1000 as key so 544.866 stays grouped together cleanly
+  // for (size_t i = 0; i < v_prop_dist.size(); ++i) {
+  //   if (v_prop_dist[i] < 100.0 || v_prop_dist[i] >= 200.0) continue;
+  //   if (v_hits_sim[i] <= 0) continue;
+
+  //   double discrepancy = (v_hits_geo[i] - v_hits_sim[i]) / v_hits_sim[i];
+  //   if (discrepancy > -0.03) continue;   // keep only the problematic negative-bias entries
+
+  //   int key = std::lround(v_r[i] * 1000.0);
+  //   auto& s = summary_by_dT[key];
+
+  //   s.n++;
+  //   s.sum_dist += v_prop_dist[i];
+  //   s.sum_hit  += v_hits_sim[i];
+  //   s.sum_pred += v_hits_geo[i];
+  //   s.sum_bias += discrepancy;
+  //   if (discrepancy < s.min_bias) s.min_bias = discrepancy;
+  //   if (discrepancy > s.max_bias) s.max_bias = discrepancy;
+  // }
+
+  // for (const auto& kv : summary_by_dT) {
+  //   double dT = kv.first / 1000.0;
+  //   const auto& s = kv.second;
+
+  //   std::cout
+  //     << "dT=" << dT
+  //     << " cm"
+  //     << " | n=" << s.n
+  //     << " | mean_distance=" << s.sum_dist / s.n
+  //     << " cm"
+  //     << " | mean_N_hit=" << s.sum_hit / s.n
+  //     << " | mean_N_pred=" << s.sum_pred / s.n
+  //     << " | mean_bias=" << s.sum_bias / s.n
+  //     << " | min_bias=" << s.min_bias
+  //     << " | max_bias=" << s.max_bias
+  //     << std::endl;
+  // }
+
 
   auto MakeBiasPlot = [&](TProfile* prof, const std::string& outName, const std::string& title) {
     std::vector<double> xs, exs, means, rmss;
@@ -656,7 +753,7 @@ int main(int argc, char* argv[]) {
     int k = std::lower_bound(range_d_array, range_d_array + M + 1, temp) - range_d_array - 1;
     if (k < 0 || k >= M) continue;
     if (pairs.v_rec_hits.at(i) <= 0) continue;
-    if (pairs.v_distance.at(i) < 1.0) continue; 
+    if (pairs.v_distance.at(i) < 15.0) continue;  
 
     pdiff_d[j][k]->Fill(pairs.v_distance.at(i), pairs.v_hits.at(i)/pairs.v_rec_hits.at(i)*costheta);
     pdiff_dx[j][k]->Fill(pairs.v_distance.at(i), pairs.v_distance.at(i));
