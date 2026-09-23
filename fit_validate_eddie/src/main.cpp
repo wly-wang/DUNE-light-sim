@@ -19,8 +19,10 @@
 #include "TStyle.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 #include <map>
@@ -32,8 +34,16 @@ double solid(const acc& out, const TVector3 &v);
 double solid_lateral(const acc& out, const TVector3 &v);
 double omega(const double &a, const double &b, const double &d);
 double interpolate(const std::vector<double> &xData, const std::vector<double> &yData, double x, bool extrapolate);
-Double_t GaisserHillas(double x, double *par);
+Double_t GaisserHillas(double *x, double *par);
 Double_t Omega_Dome_Model(double distance, double theta);
+
+void MakePostCorrectionRatioVsZPlots(
+    const std::vector<double>& v_total_truth,
+    const std::vector<double>& v_total_pred,
+    const std::vector<double>& v_source_Z,
+    const std::string& save_dir,
+    const std::string& mode_label
+);
 
 // ============================================================
 // Shared constants / configuration
@@ -56,34 +66,90 @@ static const double radius = 8*2.54/2.;
 static const int OpDetType = 1;             // 0=disk, 1=rectangular, 2=dome
 static const bool IsRectangular = true;
 static const bool IsSphere = false;
-static const bool fVerticalBorderCorrectionMode = false;
 static const bool fUseQuadraticNmax = false;
 static const bool isDouble = true;
 
-static const double y_foils = 0.0;         // validation-side equivalent center
-static const double z_foils = 600.;      // only used if radial mode is enabled
+static const double y_foils = 0.0;         // radial-center Y in the Y-Z plane
 static const double x_foils = 0.0;
-static const double centerY = 0.0;         // fit-side vertical border center
-static const double border_center[2] = {y_foils, z_foils};  // {y0, z0} This is the yz plane center for defining the parameterization
+static const double centerY = 0.0;         // vertical border center
+
+static const double z_radial_low_min = 0.0;
+static const double z_radial_low_max = 300.0;
+static const double z_radial_high_min = 5500.0;
+static const double z_radial_high_max = 5800.0;
+static const double z_radial_low_center = 300.0;
+static const double z_radial_high_center = 5500.0;
 
 static const double opdet_x_target = 0.0;
 static const double opdet_x_window = 1.0;
-static const double z_min_keep = 0.;
-static const double z_max_keep = 300.;
+static const double z_min_keep = 0.0;
+static const double z_max_keep = 5800.0;
 static const int kMaxDevices = 6000;
+
+// ============================================================
+// Hybrid border-distance parameterization
+//   0 <= Z <= 300 cm     : lower radial parameterization
+//   300 < Z < 5500 cm    : vertical parameterization
+//   5500 <= Z <= 5800 cm : upper radial parameterization
+// ============================================================
+enum BorderCorrectionRegion {
+  kVerticalRegion,
+  kLowerRadialRegion,
+  kUpperRadialRegion
+};
+
+static const int kNBorderCorrectionRegions = 3;
+
+BorderCorrectionRegion GetBorderCorrectionRegion(double z) {
+  if (z >= z_radial_low_min && z <= z_radial_low_max) return kLowerRadialRegion;
+  if (z >= z_radial_high_min && z <= z_radial_high_max) return kUpperRadialRegion;
+  return kVerticalRegion;
+}
+
+const char* BorderCorrectionRegionLabel(BorderCorrectionRegion region) {
+  if (region == kLowerRadialRegion) return "lower_radial_z0_300";
+  if (region == kUpperRadialRegion) return "upper_radial_z5500_5800";
+  return "vertical_z300_5500";
+}
+
+double BorderCorrectionDistance(double y, double z) {
+  BorderCorrectionRegion region = GetBorderCorrectionRegion(z);
+
+  if (region == kLowerRadialRegion) {
+    double lower_center[2] = {y_foils, z_radial_low_center};
+    return GetDistanceCenter(lower_center, z, y);
+  }
+
+  if (region == kUpperRadialRegion) {
+    double upper_center[2] = {y_foils, z_radial_high_center};
+    return GetDistanceCenter(upper_center, z, y);
+  }
+
+  return std::abs(y - centerY);
+}
+
+const char* BorderCorrectionModeLabel() {
+  return "hybrid_3set_radial_edges_vertical_middle";
+}
 
 
 // ============================================================
 // Fit results to be filled at runtime and then reused by validation
 // ============================================================
 std::vector<double> g_theta_centers;
-std::vector<double> g_fit_p1;
-std::vector<double> g_fit_p2;
-std::vector<double> g_fit_p3;
-std::vector<double> g_fit_p4;
-std::vector<double> g_slopes1;
-std::vector<double> g_slopes2;
-std::vector<double> g_slopes3;
+
+struct BorderCorrectionParameters {
+  bool valid = false;
+  std::vector<double> p1;
+  std::vector<double> p2;
+  std::vector<double> p3;
+  std::vector<double> p4;
+  std::vector<double> slopes1;
+  std::vector<double> slopes2;
+  std::vector<double> slopes3;
+};
+
+BorderCorrectionParameters g_border_correction[kNBorderCorrectionRegions];
 
 // ============================================================
 // Output containers from raw pair building
@@ -96,6 +162,7 @@ struct PairData {
   std::vector<double> v_d_center;
   std::vector<double> v_x;
   std::vector<double> v_devx;
+  std::vector<BorderCorrectionRegion> v_region;
 };
 
 // ============================================================
@@ -167,12 +234,7 @@ PairData BuildPairData(const std::string& positions, const std::string& input_fi
     if (posSource[0] <= 10.0) continue;
     if (posSource[2] < z_min_keep || posSource[2] > z_max_keep) continue;
 
-    double dT = 0.0;
-    if (fVerticalBorderCorrectionMode) {
-      dT = std::abs(posSource[1] - centerY);
-    } else {
-      dT = GetDistanceCenter(border_center, posSource[2], posSource[1]);
-    }
+    double dT = BorderCorrectionDistance(posSource[1], posSource[2]);
     if (dT <= 0) continue;
 
     for (int i = 0; i < numberDevices; ++i) {
@@ -222,6 +284,7 @@ PairData BuildPairData(const std::string& positions, const std::string& input_fi
       out.v_rec_hits.push_back(rec_N);
       out.v_offset_angle.push_back(theta);
       out.v_d_center.push_back(dT);
+      out.v_region.push_back(GetBorderCorrectionRegion(posSource[2]));
     }
   }
 
@@ -260,20 +323,29 @@ int VUVHitsPredicted(const int &Nphotons_created,
 
   double hits_geo = std::exp(-distance / L_abs) * (solid_angle / (4 * pi)) * Nphotons_created;
 
-  double r_distance = 0.0;
-  if (fVerticalBorderCorrectionMode) {
-    r_distance = std::abs(ScintPoint[1] - centerY);
-  } else {
-    r_distance = GetDistanceCenter(border_center, ScintPoint[2], ScintPoint[1]);
+  BorderCorrectionRegion region = GetBorderCorrectionRegion(ScintPoint[2]);
+  const BorderCorrectionParameters& corr = g_border_correction[static_cast<int>(region)];
+  if (!corr.valid ||
+      corr.p1.size() <= static_cast<size_t>(j) ||
+      corr.p2.size() <= static_cast<size_t>(j) ||
+      corr.p3.size() <= static_cast<size_t>(j) ||
+      corr.p4.size() <= static_cast<size_t>(j) ||
+      corr.slopes1.size() <= static_cast<size_t>(j) ||
+      corr.slopes2.size() <= static_cast<size_t>(j) ||
+      corr.slopes3.size() <= static_cast<size_t>(j)) {
+    std::cerr << "Missing border correction parameters for region "
+              << BorderCorrectionRegionLabel(region)
+              << " theta bin " << j << std::endl;
+    return 0;
   }
 
-  double pars[4] = {g_fit_p1.at(j), g_fit_p2.at(j), g_fit_p3.at(j), g_fit_p4.at(j)};
-  pars[0] += g_slopes1.at(j) * r_distance;
-  pars[1] += g_slopes2.at(j) * r_distance;
-  pars[2] += g_slopes3.at(j) * r_distance;
+  double r_distance = BorderCorrectionDistance(ScintPoint[1], ScintPoint[2]);
 
-  // If your functions.h expects pointer-style GH, use:
-  // double xgh = distance;
+  double pars[4] = {corr.p1.at(j), corr.p2.at(j), corr.p3.at(j), corr.p4.at(j)};
+  pars[0] += corr.slopes1.at(j) * r_distance;
+  pars[1] += corr.slopes2.at(j) * r_distance;
+  pars[2] += corr.slopes3.at(j) * r_distance;
+
   double xgh = distance;
   double GH_correction = GaisserHillas(&xgh, pars);
 
@@ -299,6 +371,15 @@ void RunValidation(const std::string& inputfilename, const std::string& position
   std::vector<double> v_source_X;
   std::vector<double> v_source_Y;
   std::vector<double> v_source_Z;
+
+  // Extra debug info
+  std::vector<double> v_source_R;
+  std::vector<double> v_min_opdet_dist;
+  std::vector<double> v_pe_weighted_dist;
+  std::vector<double> v_max_single_opdet_pe;
+  std::vector<int>    v_closest_detID;
+  std::vector<int>    v_max_pe_detID;
+  std::vector<int>    v_genPhotons_source;
 
   TFile* f = new TFile(inputfilename.c_str());
   TTree *tree = (TTree *)f->Get("myTree");
@@ -334,15 +415,19 @@ void RunValidation(const std::string& inputfilename, const std::string& position
     if (Z < z_min_keep || Z > z_max_keep) continue;
 
     double posSource[3] = {X, Y, Z};
-    double R = 0.0;
-    if (fVerticalBorderCorrectionMode) {
-      R = std::abs(posSource[1] - centerY);
-    } else {
-      R = GetDistanceCenter(border_center, posSource[2], posSource[1]);
-    }
+    double R = BorderCorrectionDistance(posSource[1], posSource[2]);
 
     double total_pe_truth = 0.0;
     double total_pe_prediction = 0.0;
+
+    double min_opdet_dist = 1.0e30;
+    int closest_detID = -1;
+
+    double max_single_opdet_pe = -1.0;
+    int max_pe_detID = -1;
+
+    double pe_weighted_dist_num = 0.0;
+    double pe_weighted_dist_den = 0.0;
 
     for (int nPMT = 0; nPMT < numberPMTs; ++nPMT) {
       int detID = static_cast<int>(dm.id.at(nPMT));
@@ -357,6 +442,21 @@ void RunValidation(const std::string& inputfilename, const std::string& position
         std::pow(ScintPoint[2] - OpDetPoint[2], 2)
       );
       if (distance <= 0) continue;
+
+      if (distance < min_opdet_dist) {
+        min_opdet_dist = distance;
+        closest_detID = detID;
+      }
+
+      if (VUV_hits[detID] > max_single_opdet_pe) {
+        max_single_opdet_pe = VUV_hits[detID];
+        max_pe_detID = detID;
+      }
+
+      if (VUV_hits[detID] > 0) {
+        pe_weighted_dist_num += distance * VUV_hits[detID];
+        pe_weighted_dist_den += VUV_hits[detID];
+      }
 
       double cosine = std::abs(ScintPoint[0] - OpDetPoint[0]) / distance;
       if (cosine <= 0) continue;
@@ -383,8 +483,336 @@ void RunValidation(const std::string& inputfilename, const std::string& position
     v_source_Y.push_back(Y);
     v_source_Z.push_back(Z);
 
+    v_source_R.push_back(R);
+    v_min_opdet_dist.push_back(min_opdet_dist);
+    v_pe_weighted_dist.push_back(
+      pe_weighted_dist_den > 0.0 ? pe_weighted_dist_num / pe_weighted_dist_den : -999.0
+    );
+    v_max_single_opdet_pe.push_back(max_single_opdet_pe);
+    v_closest_detID.push_back(closest_detID);
+    v_max_pe_detID.push_back(max_pe_detID);
+    v_genPhotons_source.push_back(genPhotons);
+
     h_truePE_vs_predPE->Fill(total_pe_truth, total_pe_prediction);
   }
+
+  // ============================================================
+  // Debug source populations in truth-vs-pred plot
+  // ============================================================
+
+  gSystem->Exec(("mkdir -p " + save_dir).c_str());
+
+  // These are PE thresholds. Your plot axes show x10^3,
+  // so 600 on the axis means 600,000 PE.
+  const double PE_LOW_MAX     = 600.0e3;
+  const double PE_MID_MAX     = 1100.0e3;
+  const double PE_HIGH_START  = 1200.0e3;
+
+  auto PopulationLabel = [&](double truth_pe) {
+    if (truth_pe < PE_LOW_MAX) return std::string("A_low_truth_0_600k");
+    if (truth_pe < PE_MID_MAX) return std::string("B_mid_truth_600k_1100k");
+    if (truth_pe < PE_HIGH_START) return std::string("C_bridge_truth_1100k_1200k");
+    return std::string("D_high_truth_gt1200k");
+  };
+
+  struct PopSummary {
+    int n = 0;
+
+    double sum_x = 0.0;
+    double sum_y = 0.0;
+    double sum_z = 0.0;
+    double sum_r = 0.0;
+    double sum_truth = 0.0;
+    double sum_pred = 0.0;
+    double sum_ratio = 0.0;
+    double sum_min_dist = 0.0;
+    double sum_pew_dist = 0.0;
+
+    double min_x =  1.0e30;
+    double max_x = -1.0e30;
+    double min_y =  1.0e30;
+    double max_y = -1.0e30;
+    double min_z =  1.0e30;
+    double max_z = -1.0e30;
+    double min_r =  1.0e30;
+    double max_r = -1.0e30;
+    double min_truth =  1.0e30;
+    double max_truth = -1.0e30;
+    double min_ratio =  1.0e30;
+    double max_ratio = -1.0e30;
+  };
+
+  std::map<std::string, PopSummary> pop;
+
+  std::ofstream csv((save_dir + "/source_population_debug.csv").c_str());
+
+  csv << "idx,population,X,Y,Z,border_distance,total_truth,total_pred,pred_over_truth,"
+      << "genPhotons,min_opdet_dist,pe_weighted_dist,closest_detID,"
+      << "max_single_opdet_pe,max_pe_detID\n";
+
+  for (size_t i = 0; i < v_total_truth.size(); ++i) {
+    if (v_total_truth[i] <= 0.0) continue;
+
+    double ratio = v_total_pred[i] / v_total_truth[i];
+    std::string label = PopulationLabel(v_total_truth[i]);
+
+    PopSummary& s = pop[label];
+
+    s.n++;
+
+    s.sum_x += v_source_X[i];
+    s.sum_y += v_source_Y[i];
+    s.sum_z += v_source_Z[i];
+    s.sum_r += v_source_R[i];
+    s.sum_truth += v_total_truth[i];
+    s.sum_pred += v_total_pred[i];
+    s.sum_ratio += ratio;
+    s.sum_min_dist += v_min_opdet_dist[i];
+    s.sum_pew_dist += v_pe_weighted_dist[i];
+
+    s.min_x = std::min(s.min_x, v_source_X[i]);
+    s.max_x = std::max(s.max_x, v_source_X[i]);
+    s.min_y = std::min(s.min_y, v_source_Y[i]);
+    s.max_y = std::max(s.max_y, v_source_Y[i]);
+    s.min_z = std::min(s.min_z, v_source_Z[i]);
+    s.max_z = std::max(s.max_z, v_source_Z[i]);
+    s.min_r = std::min(s.min_r, v_source_R[i]);
+    s.max_r = std::max(s.max_r, v_source_R[i]);
+    s.min_truth = std::min(s.min_truth, v_total_truth[i]);
+    s.max_truth = std::max(s.max_truth, v_total_truth[i]);
+    s.min_ratio = std::min(s.min_ratio, ratio);
+    s.max_ratio = std::max(s.max_ratio, ratio);
+
+    csv << i << ","
+        << label << ","
+        << v_source_X[i] << ","
+        << v_source_Y[i] << ","
+        << v_source_Z[i] << ","
+        << v_source_R[i] << ","
+        << v_total_truth[i] << ","
+        << v_total_pred[i] << ","
+        << ratio << ","
+        << v_genPhotons_source[i] << ","
+        << v_min_opdet_dist[i] << ","
+        << v_pe_weighted_dist[i] << ","
+        << v_closest_detID[i] << ","
+        << v_max_single_opdet_pe[i] << ","
+        << v_max_pe_detID[i]
+        << "\n";
+  }
+
+  csv.close();
+
+  std::cout << "\n=== Source population breakdown ===\n";
+  std::cout << "Debug CSV written to: " << save_dir << "/source_population_debug.csv\n";
+
+  for (const auto& kv : pop) {
+    const std::string& label = kv.first;
+    const PopSummary& s = kv.second;
+
+    if (s.n <= 0) continue;
+
+    std::cout << "\n--- " << label << " ---\n";
+    std::cout << "N sources = " << s.n << "\n";
+
+    std::cout << "X range = [" << s.min_x << ", " << s.max_x << "] cm"
+              << " | mean X = " << s.sum_x / s.n << "\n";
+
+    std::cout << "Y range = [" << s.min_y << ", " << s.max_y << "] cm"
+              << " | mean Y = " << s.sum_y / s.n << "\n";
+
+    std::cout << "Z range = [" << s.min_z << ", " << s.max_z << "] cm"
+              << " | mean Z = " << s.sum_z / s.n << "\n";
+
+    std::cout << "border-distance range = [" << s.min_r << ", " << s.max_r << "] cm"
+              << " | mean border distance = " << s.sum_r / s.n << "\n";
+
+    std::cout << "truth PE range = [" << s.min_truth << ", " << s.max_truth << "]"
+              << " | mean truth PE = " << s.sum_truth / s.n << "\n";
+
+    std::cout << "mean pred PE = " << s.sum_pred / s.n << "\n";
+
+    std::cout << "pred/truth range = [" << s.min_ratio << ", " << s.max_ratio << "]"
+              << " | mean pred/truth = " << s.sum_ratio / s.n << "\n";
+
+    std::cout << "mean min distance to selected OpDet = "
+              << s.sum_min_dist / s.n << " cm\n";
+
+    std::cout << "mean PE-weighted distance = "
+              << s.sum_pew_dist / s.n << " cm\n";
+  }
+  auto GetMinMaxVec = [](const std::vector<double>& v, double& vmin, double& vmax) {
+    vmin =  1.0e30;
+    vmax = -1.0e30;
+
+    for (double x : v) {
+      if (!std::isfinite(x)) continue;
+      vmin = std::min(vmin, x);
+      vmax = std::max(vmax, x);
+    }
+
+    if (vmax <= vmin) {
+      vmin -= 1.0;
+      vmax += 1.0;
+    }
+  };
+
+  double xmin_dbg, xmax_dbg;
+  double ymin_dbg, ymax_dbg;
+  double zmin_dbg, zmax_dbg;
+  double rmin_dbg, rmax_dbg;
+  double dmin_dbg, dmax_dbg;
+
+  GetMinMaxVec(v_source_X, xmin_dbg, xmax_dbg);
+  GetMinMaxVec(v_source_Y, ymin_dbg, ymax_dbg);
+  GetMinMaxVec(v_source_Z, zmin_dbg, zmax_dbg);
+  GetMinMaxVec(v_source_R, rmin_dbg, rmax_dbg);
+  GetMinMaxVec(v_min_opdet_dist, dmin_dbg, dmax_dbg);
+
+  double max_truth_dbg = 0.0;
+  double max_ratio_dbg = 0.0;
+
+  for (size_t i = 0; i < v_total_truth.size(); ++i) {
+    max_truth_dbg = std::max(max_truth_dbg, v_total_truth[i]);
+    if (v_total_truth[i] > 0.0) {
+      max_ratio_dbg = std::max(max_ratio_dbg, v_total_pred[i] / v_total_truth[i]);
+    }
+  }
+
+  if (max_truth_dbg <= 0.0) max_truth_dbg = 1.0;
+  if (max_ratio_dbg <= 0.0) max_ratio_dbg = 2.0;
+
+  TH2F* h_truth_vs_x = new TH2F(
+    "h_truth_vs_x",
+    "Total truth PE vs source X",
+    80, xmin_dbg, xmax_dbg,
+    120, 0.0, 1.10 * max_truth_dbg
+  );
+
+  TH2F* h_truth_vs_y = new TH2F(
+    "h_truth_vs_y",
+    "Total truth PE vs source Y",
+    80, ymin_dbg, ymax_dbg,
+    120, 0.0, 1.10 * max_truth_dbg
+  );
+
+  TH2F* h_truth_vs_z = new TH2F(
+    "h_truth_vs_z",
+    "Total truth PE vs source Z",
+    80, zmin_dbg, zmax_dbg,
+    120, 0.0, 1.10 * max_truth_dbg
+  );
+
+  TH2F* h_truth_vs_r = new TH2F(
+    "h_truth_vs_r",
+    "Total truth PE vs border distance",
+    80, rmin_dbg, rmax_dbg,
+    120, 0.0, 1.10 * max_truth_dbg
+  );
+
+  TH2F* h_truth_vs_mindist = new TH2F(
+    "h_truth_vs_mindist",
+    "Total truth PE vs nearest selected OpDet distance",
+    80, dmin_dbg, dmax_dbg,
+    120, 0.0, 1.10 * max_truth_dbg
+  );
+
+  TH2F* h_ratio_vs_x = new TH2F(
+    "h_ratio_vs_x",
+    "Prediction / truth vs source X",
+    80, xmin_dbg, xmax_dbg,
+    120, 0.6, 1.4
+  );
+
+  TH2F* h_ratio_vs_y = new TH2F(
+    "h_ratio_vs_y",
+    "Prediction / truth vs source Y",
+    80, ymin_dbg, ymax_dbg,
+    120, 0.6, 1.4
+  );
+
+  TH2F* h_ratio_vs_z = new TH2F(
+    "h_ratio_vs_z",
+    "Prediction / truth vs source Z",
+    80, zmin_dbg, zmax_dbg,
+    120, 0.6, 1.4
+  );
+
+  TH2F* h_ratio_vs_r = new TH2F(
+    "h_ratio_vs_r",
+    "Prediction / truth vs border distance",
+    80, rmin_dbg, rmax_dbg,
+    120, 0.6, 1.4
+  );
+
+  for (size_t i = 0; i < v_total_truth.size(); ++i) {
+    if (v_total_truth[i] <= 0.0) continue;
+
+    double ratio = v_total_pred[i] / v_total_truth[i];
+
+    h_truth_vs_x->Fill(v_source_X[i], v_total_truth[i]);
+    h_truth_vs_y->Fill(v_source_Y[i], v_total_truth[i]);
+    h_truth_vs_z->Fill(v_source_Z[i], v_total_truth[i]);
+    h_truth_vs_r->Fill(v_source_R[i], v_total_truth[i]);
+    h_truth_vs_mindist->Fill(v_min_opdet_dist[i], v_total_truth[i]);
+
+    h_ratio_vs_x->Fill(v_source_X[i], v_total_pred[i]);
+    h_ratio_vs_y->Fill(v_source_Y[i], v_total_pred[i]);
+    h_ratio_vs_z->Fill(v_source_Z[i], v_total_pred[i]);
+    h_ratio_vs_r->Fill(v_source_R[i], v_total_pred[i]);
+  }
+
+  auto DrawDebugTH2 = [&](TH2F* h,
+                          const std::string& xTitle,
+                          const std::string& yTitle,
+                          const std::string& outName,
+                          bool logz = true) {
+    TCanvas* cdbg = new TCanvas(("c_" + outName).c_str(), "", 200, 10, 1000, 800);
+
+    cdbg->SetLeftMargin(0.13);
+    cdbg->SetRightMargin(0.15);
+    cdbg->SetBottomMargin(0.12);
+    cdbg->SetTopMargin(0.08);
+    cdbg->SetGrid();
+
+    if (logz) cdbg->SetLogz();
+
+    h->SetStats(0);
+    h->GetXaxis()->SetTitle(xTitle.c_str());
+    h->GetYaxis()->SetTitle(yTitle.c_str());
+    h->GetXaxis()->SetTitleSize(0.045);
+    h->GetYaxis()->SetTitleSize(0.045);
+    h->GetXaxis()->SetLabelSize(0.040);
+    h->GetYaxis()->SetLabelSize(0.040);
+    h->GetYaxis()->SetTitleOffset(1.25);
+
+    h->Draw("COLZ");
+
+    cdbg->SaveAs((save_dir + "/" + outName).c_str());
+
+    delete cdbg;
+  };
+
+  DrawDebugTH2(h_truth_vs_x, "source X [cm]", "total truth PE", "debug_total_truthPE_vs_X.pdf");
+  DrawDebugTH2(h_truth_vs_y, "source Y [cm]", "total truth PE", "debug_total_truthPE_vs_Y.pdf");
+  DrawDebugTH2(h_truth_vs_z, "source Z [cm]", "total truth PE", "debug_total_truthPE_vs_Z.pdf");
+  DrawDebugTH2(h_truth_vs_r, "border distance [cm]", "total truth PE", "debug_total_truthPE_vs_borderDistance.pdf");
+  DrawDebugTH2(h_truth_vs_mindist, "nearest selected OpDet distance [cm]", "total truth PE", "debug_total_truthPE_vs_minOpDetDistance.pdf");
+
+  DrawDebugTH2(h_ratio_vs_x, "source X [cm]", "total prediction/total truth", "debug_predOverTruth_vs_X.pdf");
+  DrawDebugTH2(h_ratio_vs_y, "source Y [cm]", "total prediction/total truth", "debug_predOverTruth_vs_Y.pdf");
+  DrawDebugTH2(h_ratio_vs_z, "source Z [cm]", "total prediction/total truth", "debug_predOverTruth_vs_Z.pdf");
+  DrawDebugTH2(h_ratio_vs_r, "border distance [cm]", "total prediction/total truth", "debug_predOverTruth_vs_borderDistance.pdf");
+
+  std::string mode_label = BorderCorrectionModeLabel();
+
+  MakePostCorrectionRatioVsZPlots(
+    v_total_truth,
+    v_total_pred,
+    v_source_Z,
+    save_dir,
+    mode_label
+  );
 
   std::cout << "\n=== totals between 1.3e6 and 1.8e6 ===\n";
   int n_truth_band = 0, n_pred_band = 0;
@@ -680,9 +1108,386 @@ void RunValidation(const std::string& inputfilename, const std::string& position
   };
 
   MakeBiasPlot(profile, "validation_bias_all.pdf", "DUNE FD-HD validation: all selected pairs");
-  MakeBiasPlot(profile_core, "validation_bias_dTlt600.pdf", "DUNE FD-HD validation: d_{T} < 600 cm");
+  MakeBiasPlot(profile_core, "validation_bias_borderDistlt600.pdf", "DUNE FD-HD validation: border distance < 600 cm");
 
   delete f;
+}
+
+// ============================================================
+// This section will compute the visibility map
+// ============================================================
+
+// ============================================================
+// Truth visibility-map projections: x, y, z
+// visibility = sum_i VUV_hits[i] / genPhotons
+// ============================================================
+void MakeTruthVisibilityMaps(const std::string& inputfilename,
+                             const std::string& save_dir,
+                             bool apply_fit_side_cut = false) {
+
+  TFile* f = TFile::Open(inputfilename.c_str());
+  if (!f || f->IsZombie()) {
+    std::cerr << "ERROR: could not open " << inputfilename << std::endl;
+    return;
+  }
+
+  TTree* tree = (TTree*)f->Get("myTree");
+  if (!tree) {
+    std::cerr << "ERROR: tree 'myTree' not found in " << inputfilename << std::endl;
+    f->Close();
+    return;
+  }
+
+  int VUV_hits[kMaxDevices];
+  int Vis_hits[kMaxDevices];
+  double X, Y, Z;
+  int genPhotons, numberDevices;
+
+  tree->SetBranchAddress("numberDevices", &numberDevices);
+  tree->SetBranchAddress("X", &X);
+  tree->SetBranchAddress("Y", &Y);
+  tree->SetBranchAddress("Z", &Z);
+  tree->SetBranchAddress("VUV_hits", VUV_hits);
+  tree->SetBranchAddress("Vis_hits", Vis_hits);
+  tree->SetBranchAddress("genPhotons", &genPhotons);
+
+  // ------------------------------------------------------------
+  // First pass: find coordinate ranges from the actual source grid
+  // ------------------------------------------------------------
+  bool first = true;
+  double xmin = 0.0, xmax = 0.0;
+  double ymin = 0.0, ymax = 0.0;
+  double zmin = 0.0, zmax = 0.0;
+
+  Long64_t n_entries = tree->GetEntries();
+
+  for (Long64_t n = 0; n < n_entries; ++n) {
+    tree->GetEntry(n);
+
+    if (numberDevices <= 0) continue;
+    if (numberDevices > kMaxDevices) continue;
+    if (genPhotons <= 0) continue;
+
+    // For visibility maps, usually do NOT apply the fit-side cut.
+    // Set apply_fit_side_cut=true only if you want exactly the old validation side.
+    if (apply_fit_side_cut && X <= 10.0) continue;
+
+    if (Z < z_min_keep || Z > z_max_keep) continue;
+
+    if (first) {
+      xmin = xmax = X;
+      ymin = ymax = Y;
+      zmin = zmax = Z;
+      first = false;
+    } else {
+      xmin = std::min(xmin, X);
+      xmax = std::max(xmax, X);
+      ymin = std::min(ymin, Y);
+      ymax = std::max(ymax, Y);
+      zmin = std::min(zmin, Z);
+      zmax = std::max(zmax, Z);
+    }
+  }
+
+  if (first) {
+    std::cerr << "ERROR: no valid entries found for visibility maps" << std::endl;
+    f->Close();
+    return;
+  }
+
+  auto PadRange = [](double& lo, double& hi) {
+    double width = hi - lo;
+    if (width <= 0.0) {
+      lo -= 1.0;
+      hi += 1.0;
+      return;
+    }
+    double pad = 0.02 * width;
+    lo -= pad;
+    hi += pad;
+  };
+
+  PadRange(xmin, xmax);
+  PadRange(ymin, ymax);
+  PadRange(zmin, zmax);
+
+  std::cout << "\n=== Visibility map coordinate ranges ===" << std::endl;
+  std::cout << "X range = [" << xmin << ", " << xmax << "] cm" << std::endl;
+  std::cout << "Y range = [" << ymin << ", " << ymax << "] cm" << std::endl;
+  std::cout << "Z range = [" << zmin << ", " << zmax << "] cm" << std::endl;
+
+  // Bin choices. Adjust if you want coarser/smoother projections.
+  const int n_x_bins = 120;
+  const int n_y_bins = 120;
+  const int n_z_bins = 160;
+
+  TProfile* h_vis_x = new TProfile(
+    "hVisMap_proj_x",
+    "Detector visibility map projection x [cm]",
+    n_x_bins, xmin, xmax, "s"
+  );
+
+  TProfile* h_vis_y = new TProfile(
+    "hVisMap_proj_y",
+    "Detector visibility map projection y [cm]",
+    n_y_bins, ymin, ymax, "s"
+  );
+
+  TProfile* h_vis_z = new TProfile(
+    "hVisMap_proj_z",
+    "Detector visibility map projection z [cm]",
+    n_z_bins, zmin, zmax, "s"
+  );
+
+  // ------------------------------------------------------------
+  // Second pass: compute visibility at every source point
+  // ------------------------------------------------------------
+  int n_used = 0;
+
+  for (Long64_t n = 0; n < n_entries; ++n) {
+    tree->GetEntry(n);
+
+    if (numberDevices <= 0) continue;
+    if (numberDevices > kMaxDevices) continue;
+    if (genPhotons <= 0) continue;
+    if (apply_fit_side_cut && X <= 10.0) continue;
+    if (Z < z_min_keep || Z > z_max_keep) continue;
+
+    double total_vuv_pe = 0.0;
+
+    for (int detID = 0; detID < numberDevices; ++detID) {
+      total_vuv_pe += VUV_hits[detID];
+
+      // If later you want VUV + visible photons instead, use:
+      // total_vuv_pe += VUV_hits[detID] + Vis_hits[detID];
+    }
+
+    double visibility = total_vuv_pe / double(genPhotons);
+
+    h_vis_x->Fill(X, visibility);
+    h_vis_y->Fill(Y, visibility);
+    h_vis_z->Fill(Z, visibility);
+
+    n_used++;
+  }
+
+  std::cout << "Visibility-map entries used = " << n_used << std::endl;
+
+  gSystem->Exec(("mkdir -p " + save_dir).c_str());
+
+  auto DrawVisibilityProjection = [&](TProfile* h,
+                                      const std::string& coord,
+                                      const std::string& outfile) {
+    TCanvas* c = new TCanvas(
+      ("c_" + outfile).c_str(),
+      "",
+      200, 10, 1200, 800
+    );
+
+    c->SetLeftMargin(0.13);
+    c->SetRightMargin(0.06);
+    c->SetBottomMargin(0.12);
+    c->SetTopMargin(0.08);
+    c->SetGrid();
+
+    h->SetStats(1);
+    h->SetLineColor(kBlue + 1);
+    h->SetLineWidth(2);
+    h->SetMarkerColor(kBlue + 1);
+    h->SetMarkerStyle(20);
+    h->SetMarkerSize(0.7);
+
+    h->GetXaxis()->SetTitle((coord + " [cm]").c_str());
+    h->GetYaxis()->SetTitle("Fraction of light collected");
+    h->GetXaxis()->SetTitleSize(0.045);
+    h->GetYaxis()->SetTitleSize(0.045);
+    h->GetXaxis()->SetLabelSize(0.040);
+    h->GetYaxis()->SetLabelSize(0.040);
+    h->GetYaxis()->SetTitleOffset(1.25);
+
+    double ymax_plot = h->GetMaximum();
+    if (ymax_plot <= 0.0) ymax_plot = 1.0e-12;
+    h->SetMinimum(0.0);
+    h->SetMaximum(1.15 * ymax_plot);
+
+    // HIST gives the old visibility-map projection style.
+    h->Draw("HIST");
+
+    c->SaveAs((save_dir + "/" + outfile).c_str());
+    delete c;
+  };
+
+  DrawVisibilityProjection(h_vis_x, "x", "visibility_map_projection_x.pdf");
+  DrawVisibilityProjection(h_vis_y, "y", "visibility_map_projection_y.pdf");
+  DrawVisibilityProjection(h_vis_z, "z", "visibility_map_projection_z.pdf");
+
+  TFile* fout = TFile::Open((save_dir + "/visibility_maps.root").c_str(), "RECREATE");
+  h_vis_x->Write();
+  h_vis_y->Write();
+  h_vis_z->Write();
+  fout->Close();
+
+  f->Close();
+}
+
+// ============================================================
+// Source-level post-correction ratio vs Z
+// ratio = total prediction / total truth
+// ============================================================
+void MakePostCorrectionRatioVsZPlots(
+    const std::vector<double>& v_total_truth,
+    const std::vector<double>& v_total_pred,
+    const std::vector<double>& v_source_Z,
+    const std::string& save_dir,
+    const std::string& mode_label
+) {
+  if (v_total_truth.size() != v_total_pred.size() ||
+      v_total_truth.size() != v_source_Z.size()) {
+    std::cerr << "ERROR: vector size mismatch in MakePostCorrectionRatioVsZPlots" << std::endl;
+    return;
+  }
+
+  gSystem->Exec(("mkdir -p " + save_dir).c_str());
+
+  const double zlo = z_min_keep;
+  const double zhi = z_max_keep;
+
+  const int n_z_bins = std::max(1, int((zhi - zlo) / 50.0));
+
+  TH2F* h2_ratio_z = new TH2F(
+    "h2_pred_over_truth_vs_z",
+    "",
+    n_z_bins, zlo, zhi,
+    120, 0.0, 2.0
+  );
+
+  TProfile* p_ratio_z = new TProfile(
+    "p_pred_over_truth_vs_z",
+    "",
+    n_z_bins, zlo, zhi
+  );
+
+  TH1D* h_ratio = new TH1D(
+    "h_pred_over_truth",
+    "",
+    120, 0.0, 2.0
+  );
+
+  int n_used = 0;
+  int n_bad_truth = 0;
+
+  for (size_t i = 0; i < v_total_truth.size(); ++i) {
+    if (v_total_truth[i] <= 0.0) {
+      n_bad_truth++;
+      continue;
+    }
+
+    double ratio = v_total_pred[i] / v_total_truth[i];
+    if (!std::isfinite(ratio)) continue;
+
+    h2_ratio_z->Fill(v_source_Z[i], ratio);
+    p_ratio_z->Fill(v_source_Z[i], ratio);
+    h_ratio->Fill( ratio );
+
+    n_used++;
+  }
+
+  std::cout << "\n=== Post-correction ratio vs Z: " << mode_label << " ===" << std::endl;
+  std::cout << "entries used = " << n_used << std::endl;
+  std::cout << "entries skipped because truth <= 0 = " << n_bad_truth << std::endl;
+
+  // ------------------------------------------------------------
+  // 2D distribution: prediction/truth vs Z
+  // ------------------------------------------------------------
+  TCanvas* c2 = new TCanvas(
+    ("c_ratio_vs_z_" + mode_label).c_str(),
+    "",
+    200, 10, 1200, 800
+  );
+
+  c2->SetLeftMargin(0.13);
+  c2->SetRightMargin(0.15);
+  c2->SetBottomMargin(0.12);
+  c2->SetTopMargin(0.08);
+  c2->SetGrid();
+
+  h2_ratio_z->SetTitle(("Post-correction prediction vs Z: " + mode_label).c_str());
+  h2_ratio_z->GetXaxis()->SetTitle("source Z [cm]");
+  h2_ratio_z->GetYaxis()->SetTitle("total prediction/total truth");
+  h2_ratio_z->GetXaxis()->SetTitleSize(0.045);
+  h2_ratio_z->GetYaxis()->SetTitleSize(0.045);
+  h2_ratio_z->GetXaxis()->SetLabelSize(0.040);
+  h2_ratio_z->GetYaxis()->SetLabelSize(0.040);
+  h2_ratio_z->GetYaxis()->SetTitleOffset(1.20);
+  h2_ratio_z->SetStats(0);
+  h2_ratio_z->Draw("COLZ");
+
+  p_ratio_z->SetMarkerStyle(20);
+  p_ratio_z->SetMarkerSize(0.9);
+  p_ratio_z->SetMarkerColor(kRed + 1);
+  p_ratio_z->SetLineColor(kRed + 1);
+  p_ratio_z->SetLineWidth(2);
+  p_ratio_z->Draw("E1 SAME");
+
+  TLine* l_one = new TLine(zlo, 1.0, zhi, 1.0);
+  l_one->SetLineColor(kBlack);
+  l_one->SetLineStyle(kDashed);
+  l_one->SetLineWidth(3);
+  l_one->Draw("same");
+
+  const double z_transitions[2] = {z_radial_low_max, z_radial_high_min};
+  for (int i = 0; i < 2; ++i) {
+    if (z_transitions[i] >= zlo && z_transitions[i] <= zhi) {
+      TLine* l_transition = new TLine(z_transitions[i], 0.0, z_transitions[i], 2.0);
+      l_transition->SetLineColor(kMagenta + 1);
+      l_transition->SetLineStyle(kDashed);
+      l_transition->SetLineWidth(3);
+      l_transition->Draw("same");
+    }
+  }
+
+  c2->SaveAs((save_dir + "/postcorrection_pred_over_truth_vs_z_2D.pdf").c_str());
+
+  // ------------------------------------------------------------
+  // 1D ratio distribution
+  // ------------------------------------------------------------
+  TCanvas* c1 = new TCanvas(
+    ("c_ratio_distribution_" + mode_label).c_str(),
+    "",
+    200, 10, 900, 700
+  );
+
+  c1->SetLeftMargin(0.13);
+  c1->SetBottomMargin(0.12);
+  c1->SetGrid();
+
+  h_ratio->SetTitle(("Distribution of total prediction/total truth: " + mode_label).c_str());
+  h_ratio->GetXaxis()->SetTitle("total prediction/total truth");
+  h_ratio->GetYaxis()->SetTitle("source points");
+  h_ratio->SetLineColor(kBlue + 1);
+  h_ratio->SetLineWidth(2);
+  h_ratio->SetStats(1);
+  h_ratio->Draw("HIST");
+
+  TLine* l_one_dist = new TLine(1.0, 0.0, 1.0, h_ratio->GetMaximum() * 1.05);
+  l_one_dist->SetLineColor(kRed + 1);
+  l_one_dist->SetLineStyle(kDashed);
+  l_one_dist->SetLineWidth(3);
+  l_one_dist->Draw("same");
+
+  c1->SaveAs((save_dir + "/postcorrection_pred_over_truth_distribution.pdf").c_str());
+
+  // ------------------------------------------------------------
+  // Save objects for later stitching comparison
+  // ------------------------------------------------------------
+  TFile* fout = TFile::Open((save_dir + "/postcorrection_ratio_vs_z.root").c_str(), "RECREATE");
+  h2_ratio_z->Write();
+  p_ratio_z->Write();
+  h_ratio->Write();
+  fout->Close();
+
+  delete c2;
+  delete c1;
 }
 
 // ============================================================
@@ -700,12 +1505,37 @@ int main(int argc, char* argv[]) {
   std::string positions = "./protodune_optical_mapping.txt";
   std::string input_file = argv[1];
   std::string file_name = "output";
-  std::string save_dir = "./plots";
+  std::string save_dir = "./plots_hybrid";
   gSystem->Exec(("mkdir -p " + save_dir).c_str());
+
+  //truth visibility maps
+  MakeTruthVisibilityMaps(input_file, save_dir, false);
 
   for (int i = 0; i < N; ++i) g_theta_centers.push_back(delta_angulo/2.0 + i*delta_angulo);
 
   PairData pairs = BuildPairData(positions, input_file);
+
+  const BorderCorrectionRegion fit_regions[kNBorderCorrectionRegions] = {
+    kLowerRadialRegion,
+    kVerticalRegion,
+    kUpperRadialRegion
+  };
+  const std::string base_save_dir = save_dir;
+  const std::string base_file_name = file_name;
+
+  for (int iRegion = 0; iRegion < kNBorderCorrectionRegions; ++iRegion) {
+    BorderCorrectionRegion fit_region = fit_regions[iRegion];
+    int region_index = static_cast<int>(fit_region);
+    std::string region_label = BorderCorrectionRegionLabel(fit_region);
+    std::string save_dir = base_save_dir + "/" + region_label;
+    std::string file_name = base_file_name + "_" + region_label;
+    gSystem->Exec(("mkdir -p " + save_dir).c_str());
+
+    std::cout << "\n=== Fitting border correction region: "
+              << region_label << " ===" << std::endl;
+
+    std::vector<double> fit_p1, fit_p2, fit_p3, fit_p4;
+    std::vector<double> fit_slopes1, fit_slopes2, fit_slopes3;
 
   TH1D* h = new TH1D("","", range_d, 0, range_d*1.05);
   TH1D* hd_centers[M];
@@ -745,6 +1575,8 @@ int main(int argc, char* argv[]) {
   }
 
   for (size_t i = 0; i < pairs.v_distance.size(); ++i) {
+    if (pairs.v_region.at(i) != fit_region) continue;
+
     double costheta = std::cos(pi * pairs.v_offset_angle.at(i) / 180.0);
     int j = int(pairs.v_offset_angle.at(i) / delta_angulo);
     if (j < 0 || j >= N) continue;
@@ -798,11 +1630,16 @@ int main(int argc, char* argv[]) {
   }
 
   const int dim = N_canvas.size();
+  if (dim == 0) {
+    std::cerr << "WARNING: no fit entries for region " << region_label
+              << "; validation in this region will predict zero PE." << std::endl;
+    continue;
+  }
 
   // crown plot
   TCanvas *canvas0 = new TCanvas("canvas0", "graph draw options", 200, 200, 500, 400);
   h->SetTitle("Help to choose the \"border-study\" distance bins");
-  h->GetXaxis()->SetTitle("distance to centre in Y-Z plane [cm]");
+  h->GetXaxis()->SetTitle("hybrid border distance [cm]");
   h->SetStats(0);
   h->Draw("hist");
   line[M] = new TLine(range_d, 0., range_d, 2000);
@@ -852,10 +1689,12 @@ int main(int argc, char* argv[]) {
   double x_0[2] = {0, d_max};
   double y_0[2] = {0, 2.};
   TGraph* gg0[64];
-  TLegend *leg1 = new TLegend(0.62, 0.55, 0.95, 0.93, NULL, "brNDC");
+  TLegend *leg1 = new TLegend(0.58, 0.36, 0.97, 0.88, NULL, "brNDC");
   leg1->SetFillStyle(0);
   leg1->SetBorderSize(0);
-  leg1->SetTextSize(0.035);
+  leg1->SetTextSize(0.05);
+  leg1->SetMargin(0.16);
+  leg1->SetNColumns(1);
   char label[N][40];
 
   for (int l = 0; l < dim; ++l) {
@@ -863,8 +1702,8 @@ int main(int argc, char* argv[]) {
     canvas1->cd(l + 1);
     gPad->SetLeftMargin(0.14);
     gPad->SetRightMargin(0.05);
-    gPad->SetBottomMargin(0.16);
-    gPad->SetTopMargin(0.10);
+    gPad->SetBottomMargin(0.18);
+    gPad->SetTopMargin(0.12);
 
     gg0[l] = new TGraph(2, x_0, y_0);
     gg0[l]->SetTitle(title[k].c_str());
@@ -926,7 +1765,7 @@ int main(int argc, char* argv[]) {
       if (l == 0 && n_entries[j][k] > 0 && gr[j][k] != nullptr) {
         int a_min = j * delta_angulo;
         int a_max = (j + 1) * delta_angulo;
-        sprintf(label[j], "#theta #in [%i, %i] deg", a_min, a_max);
+        std::snprintf(label[j], sizeof(label[j]), "#theta #in [%i, %i] deg", a_min, a_max);
         leg1->AddEntry(gr[j][k], label[j], "p");
       }
     }
@@ -1020,7 +1859,7 @@ int main(int argc, char* argv[]) {
       GH[j][k]->Draw("SAME");
 
       double dmean = (hd_centers[k]->GetEntries() > 0) ? hd_centers[k]->GetMean() : d_center[k];
-      TString lab; lab.Form("d_{T} #approx %.0f cm", dmean);
+      TString lab; lab.Form("d_{B} #approx %.0f cm", dmean);
       legA->AddEntry(gr[j][k], lab, "p");
     }
 
@@ -1086,9 +1925,9 @@ int main(int argc, char* argv[]) {
     gdmax[j]->Fit(f2[j], "Q", "", 0, bf_hi);
     glambda[j]->Fit(f3[j], "Q", "", 0, bf_hi);
 
-    g_slopes1.push_back(f1[j]->GetParameter(1));
-    g_slopes2.push_back(f2[j]->GetParameter(1));
-    g_slopes3.push_back(f3[j]->GetParameter(1));
+    fit_slopes1.push_back(f1[j]->GetParameter(1));
+    fit_slopes2.push_back(f2[j]->GetParameter(1));
+    fit_slopes3.push_back(f3[j]->GetParameter(1));
 
     eslopes1.push_back(f1[j]->GetParError(1));
     eslopes2.push_back(f2[j]->GetParError(1));
@@ -1121,28 +1960,29 @@ int main(int argc, char* argv[]) {
   }
 
   for (int i = 0; i < N; ++i) {
-    g_fit_p1.push_back(a1.at(i));
-    g_fit_p2.push_back(a2.at(i));
-    g_fit_p3.push_back(a3.at(i));
-    g_fit_p4.push_back(p4[0].at(i));
+    fit_p1.push_back(a1.at(i));
+    fit_p2.push_back(a2.at(i));
+    fit_p3.push_back(a3.at(i));
+    fit_p4.push_back(p4[0].at(i));
   }
 
-  std::cout << "\nCorrections to plug into LArSoft PhotonVisibilityServices" << std::endl;
-  std::cout << "double p1[9] = {";
-  for (int i = 0; i < N; ++i) std::cout << g_fit_p1[i] << (i+1<N ? ", " : "};\n");
-  std::cout << "double p2[9] = {";
-  for (int i = 0; i < N; ++i) std::cout << g_fit_p2[i] << (i+1<N ? ", " : "};\n");
-  std::cout << "double p3[9] = {";
-  for (int i = 0; i < N; ++i) std::cout << g_fit_p3[i] << (i+1<N ? ", " : "};\n");
-  std::cout << "double p4[9] = {";
-  for (int i = 0; i < N; ++i) std::cout << g_fit_p4[i] << (i+1<N ? ", " : "};\n");
+  std::cout << "\nCorrections to plug into LArSoft PhotonVisibilityServices: "
+            << region_label << std::endl;
+  std::cout << "double p1_" << region_label << "[9] = {";
+  for (int i = 0; i < N; ++i) std::cout << fit_p1[i] << (i+1<N ? ", " : "};\n");
+  std::cout << "double p2_" << region_label << "[9] = {";
+  for (int i = 0; i < N; ++i) std::cout << fit_p2[i] << (i+1<N ? ", " : "};\n");
+  std::cout << "double p3_" << region_label << "[9] = {";
+  for (int i = 0; i < N; ++i) std::cout << fit_p3[i] << (i+1<N ? ", " : "};\n");
+  std::cout << "double p4_" << region_label << "[9] = {";
+  for (int i = 0; i < N; ++i) std::cout << fit_p4[i] << (i+1<N ? ", " : "};\n");
 
-  std::cout << "double slopes1[9] = {";
-  for (int i = 0; i < N; ++i) std::cout << g_slopes1[i] << (i+1<N ? ", " : "};\n");
-  std::cout << "double slopes2[9] = {";
-  for (int i = 0; i < N; ++i) std::cout << g_slopes2[i] << (i+1<N ? ", " : "};\n");
-  std::cout << "double slopes3[9] = {";
-  for (int i = 0; i < N; ++i) std::cout << g_slopes3[i] << (i+1<N ? ", " : "};\n");
+  std::cout << "double slopes1_" << region_label << "[9] = {";
+  for (int i = 0; i < N; ++i) std::cout << fit_slopes1[i] << (i+1<N ? ", " : "};\n");
+  std::cout << "double slopes2_" << region_label << "[9] = {";
+  for (int i = 0; i < N; ++i) std::cout << fit_slopes2[i] << (i+1<N ? ", " : "};\n");
+  std::cout << "double slopes3_" << region_label << "[9] = {";
+  for (int i = 0; i < N; ++i) std::cout << fit_slopes3[i] << (i+1<N ? ", " : "};\n");
 
   // border slopes canvas
   double xx[3][2];
@@ -1161,9 +2001,9 @@ int main(int argc, char* argv[]) {
   std::vector<double> eslopes1_plot, eslopes2_plot, eslopes3_plot;
 
   for (int i = 0; i < N; ++i) {
-    slopes1_plot.push_back(1000.0 * g_slopes1[i]);
-    slopes2_plot.push_back(g_slopes2[i]);
-    slopes3_plot.push_back(g_slopes3[i]);
+    slopes1_plot.push_back(1000.0 * fit_slopes1[i]);
+    slopes2_plot.push_back(fit_slopes2[i]);
+    slopes3_plot.push_back(fit_slopes3[i]);
 
     eslopes1_plot.push_back(1000.0 * eslopes1[i]);
     eslopes2_plot.push_back(eslopes2[i]);
@@ -1183,26 +2023,50 @@ int main(int argc, char* argv[]) {
   g2->Fit(p0_m2, "W0Q", "", 0, 90);
   g3->Fit(p0_m3, "W0Q", "", 0, 90);
 
+  
+  auto SetAxisStyle = [](TGraphErrors* gr,
+                        double xLabel, double xTitle, double xOffset,
+                        double yLabel, double yTitle, double yOffset) {
+    gr->GetXaxis()->SetLabelSize(xLabel);
+    gr->GetXaxis()->SetTitleSize(xTitle);
+    gr->GetXaxis()->SetTitleOffset(xOffset);
+
+    gr->GetYaxis()->SetLabelSize(yLabel);
+    gr->GetYaxis()->SetTitleSize(yTitle);
+    gr->GetYaxis()->SetTitleOffset(yOffset);
+  };
+  const double topXLabelSize  = 0.05;
+  const double topXTitleSize  = 0.06;
+  const double topXTitleOff   = 1.00;
+  const double topYLabelSize  = 0.05;
+  const double topYTitleSize  = 0.06;
+  const double topYTitleOff   = 0.75;
+  const double botXLabelSize  = 0.08;
+
+  const double botXTitleSize  = 0.09;
+  const double botXTitleOff   = 0.95;
+  const double botYLabelSize  = 0.08;
+  const double botYTitleSize  = 0.09;
+  const double botYTitleOff   = 0.5;
+
+
   TCanvas *c = new TCanvas("c", "canvas", 900, 2000);
   c->Divide(1,3);
 
   c->cd(1);
   TPad *pad1 = new TPad("pad1", "pad1", 0., 0.37, 1, 1.0);
-  pad1->SetBottomMargin(0.1);
+  pad1->SetBottomMargin(0.16);
   pad1->SetLeftMargin(0.16);
   pad1->SetRightMargin(0.04);
   pad1->Draw();
   pad1->cd();
   gf[0]->GetYaxis()->SetRangeUser(0, 2.);
   gf[0]->GetXaxis()->SetRangeUser(0, range_d*1.05);
-  gf[0]->GetXaxis()->SetTitle("d_{T} [cm]");
+  gf[0]->GetXaxis()->SetTitle("border distance [cm]");
   gf[0]->GetYaxis()->SetTitle("N_{max}");
-  gf[0]->GetXaxis()->SetLabelSize(0.05);
-  gf[0]->GetXaxis()->SetTitleSize(0.06);
-  gf[0]->GetXaxis()->SetTitleOffset(1.0);
-  gf[0]->GetYaxis()->SetLabelSize(0.05);
-  gf[0]->GetYaxis()->SetTitleSize(0.06);
-  gf[0]->GetYaxis()->SetTitleOffset(1.15);
+  SetAxisStyle(gf[0],
+              topXLabelSize, topXTitleSize, topXTitleOff,
+              topYLabelSize, topYTitleSize, topYTitleOff);
   gf[0]->Draw("AP");
   for (int j = 0; j < N; j++) {
     gNmax[j]->Draw("P SAME");
@@ -1219,12 +2083,9 @@ int main(int argc, char* argv[]) {
   pad2->cd();
   g1->GetXaxis()->SetTitle("#theta [deg]");
   g1->GetYaxis()->SetTitle("slope N_{max} [cm^{-1}] x10^{-3}");
-  g1->GetXaxis()->SetLabelSize(0.08);
-  g1->GetXaxis()->SetTitleSize(0.09);
-  g1->GetXaxis()->SetTitleOffset(0.95);
-  g1->GetYaxis()->SetLabelSize(0.08);
-  g1->GetYaxis()->SetTitleSize(0.09);
-  g1->GetYaxis()->SetTitleOffset(0.75);
+  SetAxisStyle(g1,
+              botXLabelSize, botXTitleSize, botXTitleOff,
+              botYLabelSize, botYTitleSize, botYTitleOff);
   g1->SetMarkerStyle(20);
   g1->Draw("AP");
   p0_m1->SetLineColor(kGray+1);
@@ -1233,21 +2094,18 @@ int main(int argc, char* argv[]) {
 
   c->cd(2);
   TPad *padc1 = new TPad("padc1", "padc1", 0., 0.37, 1, 1.0);
-  padc1->SetBottomMargin(0.10);
+  padc1->SetBottomMargin(0.16);
   padc1->SetLeftMargin(0.16);
   padc1->SetRightMargin(0.04);
   padc1->Draw();
   padc1->cd();
   gf[1]->GetYaxis()->SetRangeUser(70., 300.);
   gf[1]->GetXaxis()->SetRangeUser(0, range_d*1.05);
-  gf[1]->GetXaxis()->SetTitle("d_{T} [cm]");
+  gf[1]->GetXaxis()->SetTitle("border distance [cm]");
   gf[1]->GetYaxis()->SetTitle("d_{max} [cm]");
-  gf[1]->GetXaxis()->SetLabelSize(0.05);
-  gf[1]->GetXaxis()->SetTitleSize(0.06);
-  gf[1]->GetXaxis()->SetTitleOffset(1.0);
-  gf[1]->GetYaxis()->SetLabelSize(0.05);
-  gf[1]->GetYaxis()->SetTitleSize(0.06);
-  gf[1]->GetYaxis()->SetTitleOffset(1.15);
+  SetAxisStyle(gf[1],
+              topXLabelSize, topXTitleSize, topXTitleOff,
+              topYLabelSize, topYTitleSize, topYTitleOff);
   gf[1]->Draw("AP");
   for (int j = 0; j < N; j++) {
     gdmax[j]->Draw("P SAME");
@@ -1264,12 +2122,9 @@ int main(int argc, char* argv[]) {
   padc2->cd();
   g2->GetXaxis()->SetTitle("#theta [deg]");
   g2->GetYaxis()->SetTitle("slope d_{max}");
-  g2->GetXaxis()->SetLabelSize(0.08);
-  g2->GetXaxis()->SetTitleSize(0.09);
-  g2->GetXaxis()->SetTitleOffset(0.95);
-  g2->GetYaxis()->SetLabelSize(0.08);
-  g2->GetYaxis()->SetTitleSize(0.09);
-  g2->GetYaxis()->SetTitleOffset(0.75);
+  SetAxisStyle(g2,
+              botXLabelSize, botXTitleSize, botXTitleOff,
+              botYLabelSize, botYTitleSize, botYTitleOff);
   g2->SetMarkerStyle(20);
   g2->Draw("AP");
   p0_m2->SetLineColor(kGray+1);
@@ -1278,15 +2133,18 @@ int main(int argc, char* argv[]) {
 
   c->cd(3);
   TPad *padcc1 = new TPad("padcc1", "padcc1", 0., 0.37, 1, 1.0);
-  padcc1->SetBottomMargin(0.10);
+  padcc1->SetBottomMargin(0.16);
   padcc1->SetLeftMargin(0.16);
   padcc1->SetRightMargin(0.04);
   padcc1->Draw();
   padcc1->cd();
   gf[2]->GetYaxis()->SetRangeUser(-10, 210);
   gf[2]->GetXaxis()->SetRangeUser(0, range_d*1.05);
-  gf[2]->GetXaxis()->SetTitle("d_{T} [cm]");
+  gf[2]->GetXaxis()->SetTitle("border distance [cm]");
   gf[2]->GetYaxis()->SetTitle("#Lambda [cm]");
+  SetAxisStyle(gf[2],
+              topXLabelSize, topXTitleSize, topXTitleOff,
+              topYLabelSize, topYTitleSize, topYTitleOff);
   gf[2]->Draw("AP");
   for (int j = 0; j < N; j++) {
     glambda[j]->Draw("P SAME");
@@ -1303,6 +2161,9 @@ int main(int argc, char* argv[]) {
   padcc2->cd();
   g3->GetXaxis()->SetTitle("#theta [deg]");
   g3->GetYaxis()->SetTitle("slope #Lambda");
+  SetAxisStyle(g3,
+              botXLabelSize, botXTitleSize, botXTitleOff,
+              botYLabelSize, botYTitleSize, botYTitleOff);
   g3->SetMarkerStyle(20);
   g3->Draw("AP");
   p0_m3->SetLineColor(kGray+1);
@@ -1311,6 +2172,28 @@ int main(int argc, char* argv[]) {
 
   c->SaveAs((save_dir + "/" + file_name + "_border_slopes_double_sided.pdf").c_str());
 
+    BorderCorrectionParameters& corr = g_border_correction[region_index];
+    corr.valid = (fit_p1.size() == N &&
+                  fit_p2.size() == N &&
+                  fit_p3.size() == N &&
+                  fit_p4.size() == N &&
+                  fit_slopes1.size() == N &&
+                  fit_slopes2.size() == N &&
+                  fit_slopes3.size() == N);
+    corr.p1 = fit_p1;
+    corr.p2 = fit_p2;
+    corr.p3 = fit_p3;
+    corr.p4 = fit_p4;
+    corr.slopes1 = fit_slopes1;
+    corr.slopes2 = fit_slopes2;
+    corr.slopes3 = fit_slopes3;
+
+    if (!corr.valid) {
+      std::cerr << "WARNING: incomplete correction parameter set for region "
+                << region_label << std::endl;
+    }
+  }
+
   RunValidation(input_file, positions, save_dir);
   return 0;
 }
@@ -1318,15 +2201,6 @@ int main(int argc, char* argv[]) {
 // ============================================================
 // Shared math utilities
 // ============================================================
-Double_t GaisserHillas(double x, double *par) {
-  Double_t X_mu_0 = par[3];
-  Double_t Normalization = par[0];
-  Double_t Diff = par[1] - X_mu_0;
-  Double_t Term = pow((x - X_mu_0)/Diff, Diff/par[2]);
-  Double_t Exponential = TMath::Exp((par[1] - x)/par[2]);
-  return Normalization * Term * Exponential;
-}
-
 double omega(const double &a, const double &b, const double &d) {
   double aa = a/(2.0*d);
   double bb = b/(2.0*d);
@@ -1389,4 +2263,3 @@ double interpolate(const std::vector<double> &xData, const std::vector<double> &
   double dydx = (yR - yL) / (xR - xL);
   return yL + dydx * (x - xL);
 }
-
