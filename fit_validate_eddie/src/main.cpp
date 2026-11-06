@@ -50,14 +50,15 @@ void MakePostCorrectionRatioVsZPlots(
 // ============================================================
 static const double pi = 3.1416;
 static const int N = 9;                     // theta bins
-static const int M = 8;                     // dT bins
+static const int M = 9;                     // dT bins
 static const double d_min = 0.0;
 static const double d_max = 1000.0;
 static const double step_d = 50.0;
 static const double FIT_MAX = 1000.0;
-static const double BORDER_FIT_MAX = 600.0;
-static const double range_d = 600.0;
-static const double range_d_array[M+1] = {0.,75.,150.,225.,300.,375.,450.,525.,600.};
+static const double BORDER_FIT_MAX = 675.0;
+static const double range_d = 675.0;
+static const double range_d_array[M+1] =
+  {0., 75., 150., 225., 300., 375., 450., 525., 600., 675.};
 static const double delta_angulo = 90.0 / N;
 static const double L_abs = 2000.0;
 static const double arapuca_w = 10.0;
@@ -88,48 +89,53 @@ static const int kMaxDevices = 6000;
 
 // ============================================================
 // Hybrid border-distance parameterization
-//   0 <= Z <= 300 cm     : lower radial parameterization
+//   0 <= Z <= 300 cm     : shared radial parameterization
 //   300 < Z < 5500 cm    : vertical parameterization
-//   5500 <= Z <= 5800 cm : upper radial parameterization
+//   5500 <= Z <= 5800 cm : shared radial parameterization
 // ============================================================
 enum BorderCorrectionRegion {
   kVerticalRegion,
-  kLowerRadialRegion,
-  kUpperRadialRegion
+  kRadialRegion
 };
 
-static const int kNBorderCorrectionRegions = 3;
+static const int kNBorderCorrectionRegions = 2;
+
+bool IsRadialZ(double z) {
+  return ((z >= z_radial_low_min && z <= z_radial_low_max) ||
+          (z >= z_radial_high_min && z <= z_radial_high_max));
+}
 
 BorderCorrectionRegion GetBorderCorrectionRegion(double z) {
-  if (z >= z_radial_low_min && z <= z_radial_low_max) return kLowerRadialRegion;
-  if (z >= z_radial_high_min && z <= z_radial_high_max) return kUpperRadialRegion;
-  return kVerticalRegion;
+  return IsRadialZ(z) ? kRadialRegion : kVerticalRegion;
 }
 
 const char* BorderCorrectionRegionLabel(BorderCorrectionRegion region) {
-  if (region == kLowerRadialRegion) return "lower_radial_z0_300";
-  if (region == kUpperRadialRegion) return "upper_radial_z5500_5800";
+  if (region == kRadialRegion) return "radial_z_edges";
   return "vertical_z300_5500";
 }
 
 double BorderCorrectionDistance(double y, double z) {
   BorderCorrectionRegion region = GetBorderCorrectionRegion(z);
 
-  if (region == kLowerRadialRegion) {
-    double lower_center[2] = {y_foils, z_radial_low_center};
-    return GetDistanceCenter(lower_center, z, y);
-  }
+  if (region == kRadialRegion) {
+    double radial_center[2];
 
-  if (region == kUpperRadialRegion) {
-    double upper_center[2] = {y_foils, z_radial_high_center};
-    return GetDistanceCenter(upper_center, z, y);
+    if (z <= z_radial_low_max) {
+      radial_center[0] = y_foils;
+      radial_center[1] = z_radial_low_center;
+    } else {
+      radial_center[0] = y_foils;
+      radial_center[1] = z_radial_high_center;
+    }
+
+    return GetDistanceCenter(radial_center, z, y);
   }
 
   return std::abs(y - centerY);
 }
 
 const char* BorderCorrectionModeLabel() {
-  return "hybrid_3set_radial_edges_vertical_middle";
+  return "hybrid_2set_shared_radial_edges_vertical_middle";
 }
 
 
@@ -365,6 +371,9 @@ void RunValidation(const std::string& inputfilename, const std::string& position
   std::vector<double> v_hits_geo;
   std::vector<double> v_r;
   std::vector<double> v_prop_dist;
+  std::vector<double> v_pair_source_X;
+  std::vector<double> v_pair_source_Y;
+  std::vector<double> v_pair_source_Z;
 
   std::vector<double> v_total_truth;
   std::vector<double> v_total_pred;
@@ -473,6 +482,9 @@ void RunValidation(const std::string& inputfilename, const std::string& position
       v_hits_geo.push_back(nPhotons_solid);
       v_r.push_back(R);
       v_prop_dist.push_back(distance);
+      v_pair_source_X.push_back(X);
+      v_pair_source_Y.push_back(Y);
+      v_pair_source_Z.push_back(Z);
     }
 
     h_tot_truth->Fill(total_pe_truth);
@@ -899,9 +911,20 @@ void RunValidation(const std::string& inputfilename, const std::string& position
 };
   const int n_bins = sizeof(edges)/sizeof(edges[0]) - 1;
   const double DT_CUTOFF = 600.0;
+  const double CORNER_Z_DEPTH = 150.0;
+  const double Y_EDGE_MIN = 525.0;
+  const double LOW_X_MAX = 75.0;
+  const double HIGH_X_MIN = 275.0;
 
   TProfile* profile = new TProfile("profile_validation", "", n_bins, edges, "s");
   TProfile* profile_core = new TProfile("profile_validation_core", "", n_bins, edges, "s");
+  TProfile* profile_corner_all_x =
+    new TProfile("profile_corner_all_x", "", n_bins, edges, "s");
+
+  TProfile* profile_corner_low_x =
+    new TProfile("profile_corner_low_x", "", n_bins, edges, "s");
+  TProfile* profile_corner_high_x =
+    new TProfile("profile_corner_high_x", "", n_bins, edges, "s");
 
   std::cout << "1 source + 1 opdet - Validation total = " << v_prop_dist.size() << std::endl;
 
@@ -928,6 +951,26 @@ void RunValidation(const std::string& inputfilename, const std::string& position
     double weight = v_hits_sim[i];
     profile->Fill(v_prop_dist[i], discrepancy, weight);
     if (v_r[i] <= DT_CUTOFF) profile_core->Fill(v_prop_dist[i], discrepancy, weight);
+    bool in_z_corner =
+      (v_pair_source_Z[i] <= z_radial_low_min + CORNER_Z_DEPTH) ||
+      (v_pair_source_Z[i] >= z_radial_high_max - CORNER_Z_DEPTH);
+
+    double abs_y = std::abs(v_pair_source_Y[i]);
+    bool in_y_edge = (abs_y >= Y_EDGE_MIN && abs_y <= 600.0);
+
+    if (in_z_corner && in_y_edge) {
+      profile_corner_all_x->Fill(v_prop_dist[i], discrepancy, weight);
+
+      if (v_pair_source_X[i] >= 0.0 &&
+          v_pair_source_X[i] <= LOW_X_MAX) {
+        profile_corner_low_x->Fill(v_prop_dist[i], discrepancy, weight);
+      }
+
+      if (v_pair_source_X[i] >= HIGH_X_MIN &&
+          v_pair_source_X[i] <= 350.0) {
+        profile_corner_high_x->Fill(v_prop_dist[i], discrepancy, weight);
+      }
+    }
   }
 
   // ------------------------------------------------------------
@@ -1055,6 +1098,7 @@ void RunValidation(const std::string& inputfilename, const std::string& position
   auto MakeBiasPlot = [&](TProfile* prof, const std::string& outName, const std::string& title) {
     std::vector<double> xs, exs, means, rmss;
     for (int iBin = 1; iBin <= n_bins; ++iBin) {
+      if (prof->GetBinEntries(iBin) <= 0.0) continue;
       xs.push_back(prof->GetXaxis()->GetBinCenter(iBin));
       exs.push_back(0.5 * (prof->GetXaxis()->GetBinUpEdge(iBin) - prof->GetXaxis()->GetBinLowEdge(iBin)));
       means.push_back(prof->GetBinContent(iBin));
@@ -1109,6 +1153,23 @@ void RunValidation(const std::string& inputfilename, const std::string& position
 
   MakeBiasPlot(profile, "validation_bias_all.pdf", "DUNE FD-HD validation: all selected pairs");
   MakeBiasPlot(profile_core, "validation_bias_borderDistlt600.pdf", "DUNE FD-HD validation: border distance < 600 cm");
+  MakeBiasPlot(
+    profile_corner_all_x,
+    "validation_bias_radial_corners_allX.pdf",
+    "Radial corners: |Y| = 525-600 cm, both Z ends, all X"
+  );
+
+  MakeBiasPlot(
+    profile_corner_low_x,
+    "validation_bias_radial_corners_lowX_0_75.pdf",
+    "Radial corners: |Y| = 525-600 cm, both Z ends, X = 0-75 cm"
+  );
+
+  MakeBiasPlot(
+    profile_corner_high_x,
+    "validation_bias_radial_corners_highX_275_350.pdf",
+    "Radial corners: |Y| = 525-600 cm, both Z ends, X = 275-350 cm"
+  );
 
   delete f;
 }
@@ -1516,10 +1577,10 @@ int main(int argc, char* argv[]) {
   PairData pairs = BuildPairData(positions, input_file);
 
   const BorderCorrectionRegion fit_regions[kNBorderCorrectionRegions] = {
-    kLowerRadialRegion,
-    kVerticalRegion,
-    kUpperRadialRegion
+    kRadialRegion,
+    kVerticalRegion
   };
+  
   const std::string base_save_dir = save_dir;
   const std::string base_file_name = file_name;
 

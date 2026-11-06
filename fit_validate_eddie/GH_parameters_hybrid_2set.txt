@@ -1,0 +1,478 @@
+
+=== Visibility map coordinate ranges ===
+X range = [-7, 357] cm
+Y range = [19.9263, 602.778] cm
+Z range = [-78.6602, 5837.86] cm
+Visibility-map entries used = 29822
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/visibility_map_projection_x.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/visibility_map_projection_y.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/visibility_map_projection_z.pdf has been created
+Loaded detector positions: 6000
+
+=== Fitting border correction region: radial_z_edges ===
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/radial_z_edges/output_radial_z_edges_crown_plot_double_sided.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/radial_z_edges/output_radial_z_edges_GH_double_sided.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/radial_z_edges/output_radial_z_edges_overlayByAngle_theta00.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/radial_z_edges/output_radial_z_edges_overlayByAngle_theta01.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/radial_z_edges/output_radial_z_edges_overlayByAngle_theta02.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/radial_z_edges/output_radial_z_edges_overlayByAngle_theta03.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/radial_z_edges/output_radial_z_edges_overlayByAngle_theta04.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/radial_z_edges/output_radial_z_edges_overlayByAngle_theta05.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/radial_z_edges/output_radial_z_edges_overlayByAngle_theta06.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/radial_z_edges/output_radial_z_edges_overlayByAngle_theta07.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/radial_z_edges/output_radial_z_edges_overlayByAngle_theta08.pdf has been created
+
+Corrections to plug into LArSoft PhotonVisibilityServices: radial_z_edges
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/radial_z_edges/output_radial_z_edges_border_slopes_double_sided.pdf has been created
+double p1_radial_z_edges[9] = {1.05962, 1.0434, 0.984799, 0.928345, 0.852519, 0.769517, 0.655745, 0.531146, 0.447953};
+double p2_radial_z_edges[9] = {117.105, 155.595, 145.433, 163.945, 182.881, 206.071, 228.283, 239.438, 205.96};
+double p3_radial_z_edges[9] = {10, 10.8886, 14.185, 14.4347, 16.3998, 45.5123, 82.5221, 100.763, 176.188};
+double p4_radial_z_edges[9] = {-5000, -3000, -3000, -3000, -3000, -1000, -500, -500, -100};
+double slopes1_radial_z_edges[9] = {0.000425189, 0.000579831, 0.000651524, 0.000567743, 0.000455184, 0.000364426, 0.000308084, 0.000262211, 0.000257592};
+double slopes2_radial_z_edges[9] = {0.0759555, 0.0403092, 0.0648501, 0.0504999, 0.0406464, 0.0253774, -0.00991721, -0.0320789, -0.0414782};
+double slopes3_radial_z_edges[9] = {1.07079e-08, -0.00231586, -0.00708859, -0.005772, -0.00647616, -0.0152878, -0.014774, -0.0155895, -0.00908033};
+
+=== Fitting border correction region: vertical_z300_5500 ===
+Warning in <TCanvas::Constructor>: Deleting canvas with same name: canvas0
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/vertical_z300_5500/output_vertical_z300_5500_crown_plot_double_sided.pdf has been created
+Warning in <TCanvas::Constructor>: Deleting canvas with same name: canvas1
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/vertical_z300_5500/output_vertical_z300_5500_GH_double_sided.pdf has been created
+Warning in <TCanvas::Constructor>: Deleting canvas with same name: c_angle_0
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/vertical_z300_5500/output_vertical_z300_5500_overlayByAngle_theta00.pdf has been created
+Warning in <TCanvas::Constructor>: Deleting canvas with same name: c_angle_1
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/vertical_z300_5500/output_vertical_z300_5500_overlayByAngle_theta01.pdf has been created
+Warning in <TCanvas::Constructor>: Deleting canvas with same name: c_angle_2
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/vertical_z300_5500/output_vertical_z300_5500_overlayByAngle_theta02.pdf has been created
+Warning in <TCanvas::Constructor>: Deleting canvas with same name: c_angle_3
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/vertical_z300_5500/output_vertical_z300_5500_overlayByAngle_theta03.pdf has been created
+Warning in <TCanvas::Constructor>: Deleting canvas with same name: c_angle_4
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/vertical_z300_5500/output_vertical_z300_5500_overlayByAngle_theta04.pdf has been created
+Warning in <TCanvas::Constructor>: Deleting canvas with same name: c_angle_5
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/vertical_z300_5500/output_vertical_z300_5500_overlayByAngle_theta05.pdf has been created
+Warning in <TCanvas::Constructor>: Deleting canvas with same name: c_angle_6
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/vertical_z300_5500/output_vertical_z300_5500_overlayByAngle_theta06.pdf has been created
+Warning in <TCanvas::Constructor>: Deleting canvas with same name: c_angle_7
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/vertical_z300_5500/output_vertical_z300_5500_overlayByAngle_theta07.pdf has been created
+Warning in <TCanvas::Constructor>: Deleting canvas with same name: c_angle_8
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/vertical_z300_5500/output_vertical_z300_5500_overlayByAngle_theta08.pdf has been created
+
+Corrections to plug into LArSoft PhotonVisibilityServices: vertical_z300_5500
+Warning in <TCanvas::Constructor>: Deleting canvas with same name: c
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/vertical_z300_5500/output_vertical_z300_5500_border_slopes_double_sided.pdf has been created
+double p1_vertical_z300_5500[9] = {1.06676, 1.01311, 0.974114, 0.930791, 0.836359, 0.746859, 0.630658, 0.513366, 0.441066};
+double p2_vertical_z300_5500[9] = {114.114, 156.451, 139.516, 151.897, 168.984, 192.8, 212.355, 217.731, 189.779};
+double p3_vertical_z300_5500[9] = {10.0001, 10.8385, 13.806, 14.613, 17.0247, 47.9752, 87.7652, 109.726, 189.374};
+double p4_vertical_z300_5500[9] = {-5000, -3000, -3000, -3000, -3000, -1000, -500, -500, -100};
+double slopes1_vertical_z300_5500[9] = {0.000221008, 0.000467632, 0.000471365, 0.000324986, 0.000299784, 0.000247915, 0.000233705, 0.000193561, 0.000177598};
+double slopes2_vertical_z300_5500[9] = {0.039901, 0.0105496, 0.0453694, 0.0552124, 0.0435214, 0.034592, 0.00885774, 0.00709083, -0.0157815};
+double slopes3_vertical_z300_5500[9] = {-1.3978e-07, -0.00126383, -0.00421211, -0.00460304, -0.00549817, -0.0166145, -0.0212808, -0.0328777, -0.029873};
+Validation loaded detector positions: 2000
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/debug_total_truthPE_vs_X.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/debug_total_truthPE_vs_Y.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/debug_total_truthPE_vs_Z.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/debug_total_truthPE_vs_borderDistance.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/debug_total_truthPE_vs_minOpDetDistance.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/debug_predOverTruth_vs_X.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/debug_predOverTruth_vs_Y.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/debug_predOverTruth_vs_Z.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/debug_predOverTruth_vs_borderDistance.pdf has been created
+
+=== Source population breakdown ===
+Debug CSV written to: ./plots_hybrid/source_population_debug.csv
+
+--- A_low_truth_0_600k ---
+N sources = 18466
+X range = [100, 350] cm | mean X = 282.449
+Y range = [31.135, 591.569] cm | mean Y = 312.87
+Z range = [35.119, 5724.08] cm | mean Z = 2877.35
+border-distance range = [31.135, 648.163] cm | mean border distance = 318.782
+truth PE range = [62000, 598830] | mean truth PE = 236505
+mean pred PE = 235408
+pred/truth range = [0.782979, 1.18041] | mean pred/truth = 1.00216
+mean min distance to selected OpDet = 283.168 cm
+mean PE-weighted distance = 411.526 cm
+
+--- B_mid_truth_600k_1100k ---
+N sources = 7716
+X range = [20, 100] cm | mean X = 49.3753
+Y range = [31.135, 591.569] cm | mean Y = 308.075
+Z range = [35.119, 5724.08] cm | mean Z = 2886.78
+border-distance range = [31.135, 648.163] cm | mean border distance = 312.912
+truth PE range = [600719, 1.09971e+06] | mean truth PE = 873934
+mean pred PE = 874441
+pred/truth range = [0.783294, 1.12866] | mean pred/truth = 0.998871
+mean min distance to selected OpDet = 53.848 cm
+mean PE-weighted distance = 164.328 cm
+
+--- C_bridge_truth_1100k_1200k ---
+N sources = 92
+X range = [20, 20] cm | mean X = 20
+Y range = [31.135, 591.569] cm | mean Y = 505.609
+Z range = [35.119, 5724.08] cm | mean Z = 2961.03
+border-distance range = [45.0006, 611.105] cm | mean border distance = 524.292
+truth PE range = [1.10808e+06, 1.19961e+06] | mean truth PE = 1.16155e+06
+mean pred PE = 1.19699e+06
+pred/truth range = [0.983281, 1.12775] | mean pred/truth = 1.03003
+mean min distance to selected OpDet = 20.05 cm
+mean PE-weighted distance = 87.8554 cm
+
+--- D_high_truth_gt1200k ---
+N sources = 375
+X range = [20, 20] cm | mean X = 20
+Y range = [31.135, 529.298] cm | mean Y = 272.91
+Z range = [146.719, 5612.48] cm | mean Z = 2793.76
+border-distance range = [31.135, 529.298] cm | mean border distance = 274.131
+truth PE range = [1.20257e+06, 1.28926e+06] | mean truth PE = 1.24948e+06
+mean pred PE = 1.32389e+06
+pred/truth range = [1.0176, 1.12016] | mean pred/truth = 1.0597
+mean min distance to selected OpDet = 20.05 cm
+mean PE-weighted distance = 103.067 cm
+
+=== Post-correction ratio vs Z: hybrid_2set_shared_radial_edges_vertical_middle ===
+entries used = 26649
+entries skipped because truth <= 0 = 0
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/postcorrection_pred_over_truth_vs_z_2D.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/postcorrection_pred_over_truth_distribution.pdf has been created
+
+=== totals between 1.3e6 and 1.8e6 ===
+pred total[174] = 1.31228e+06
+pred total[176] = 1.3158e+06
+pred total[177] = 1.3005e+06
+pred total[178] = 1.31662e+06
+pred total[179] = 1.3009e+06
+pred total[180] = 1.31682e+06
+pred total[181] = 1.301e+06
+pred total[182] = 1.31687e+06
+pred total[183] = 1.30101e+06
+pred total[184] = 1.31687e+06
+pred total[185] = 1.30101e+06
+pred total[186] = 1.31687e+06
+pred total[187] = 1.30101e+06
+pred total[188] = 1.31687e+06
+pred total[189] = 1.30101e+06
+pred total[190] = 1.31687e+06
+pred total[191] = 1.30101e+06
+pred total[192] = 1.31687e+06
+pred total[193] = 1.30101e+06
+pred total[194] = 1.31687e+06
+pred total[195] = 1.30101e+06
+pred total[196] = 1.31687e+06
+pred total[197] = 1.30101e+06
+pred total[198] = 1.31687e+06
+pred total[199] = 1.30101e+06
+pred total[200] = 1.31687e+06
+pred total[201] = 1.30101e+06
+pred total[202] = 1.31687e+06
+pred total[203] = 1.30101e+06
+pred total[204] = 1.31687e+06
+pred total[205] = 1.30101e+06
+pred total[206] = 1.31687e+06
+pred total[207] = 1.30098e+06
+pred total[208] = 1.31679e+06
+pred total[209] = 1.30083e+06
+pred total[210] = 1.3165e+06
+pred total[211] = 1.30022e+06
+pred total[212] = 1.31528e+06
+pred total[214] = 1.31005e+06
+pred total[372] = 1.31286e+06
+pred total[373] = 1.30751e+06
+pred total[374] = 1.32828e+06
+pred total[375] = 1.31456e+06
+pred total[376] = 1.33174e+06
+pred total[377] = 1.31618e+06
+pred total[378] = 1.33255e+06
+pred total[379] = 1.31657e+06
+pred total[380] = 1.33274e+06
+pred total[381] = 1.31666e+06
+pred total[382] = 1.33279e+06
+pred total[383] = 1.31667e+06
+pred total[384] = 1.33279e+06
+pred total[385] = 1.31667e+06
+pred total[386] = 1.33278e+06
+pred total[387] = 1.31667e+06
+pred total[388] = 1.33278e+06
+pred total[389] = 1.31667e+06
+pred total[390] = 1.33279e+06
+pred total[391] = 1.31667e+06
+pred total[509] = 1.31977e+06
+pred total[510] = 1.32639e+06
+pred total[511] = 1.32067e+06
+pred total[512] = 1.34162e+06
+pred total[513] = 1.32759e+06
+pred total[514] = 1.345e+06
+pred total[515] = 1.32916e+06
+pred total[516] = 1.34578e+06
+pred total[517] = 1.32953e+06
+pred total[518] = 1.34596e+06
+pred total[519] = 1.32962e+06
+pred total[520] = 1.346e+06
+pred total[521] = 1.32963e+06
+pred total[522] = 1.346e+06
+pred total[523] = 1.32963e+06
+pred total[524] = 1.346e+06
+pred total[525] = 1.32963e+06
+pred total[526] = 1.346e+06
+pred total[527] = 1.32963e+06
+pred total[528] = 1.346e+06
+pred total[529] = 1.32963e+06
+pred total[530] = 1.346e+06
+pred total[531] = 1.32963e+06
+pred total[532] = 1.346e+06
+pred total[533] = 1.32963e+06
+pred total[534] = 1.346e+06
+pred total[535] = 1.32963e+06
+pred total[536] = 1.346e+06
+pred total[537] = 1.32963e+06
+pred total[538] = 1.346e+06
+pred total[539] = 1.32963e+06
+pred total[540] = 1.346e+06
+pred total[541] = 1.32963e+06
+pred total[542] = 1.346e+06
+pred total[543] = 1.32963e+06
+pred total[544] = 1.346e+06
+pred total[545] = 1.3296e+06
+pred total[546] = 1.34594e+06
+pred total[547] = 1.32947e+06
+pred total[548] = 1.34566e+06
+pred total[549] = 1.32889e+06
+pred total[550] = 1.34451e+06
+pred total[551] = 1.32641e+06
+pred total[552] = 1.33945e+06
+pred total[553] = 1.31536e+06
+pred total[554] = 1.31627e+06
+pred total[555] = 1.30239e+06
+pred total[708] = 1.31299e+06
+pred total[709] = 1.3397e+06
+pred total[710] = 1.33636e+06
+pred total[711] = 1.33018e+06
+pred total[712] = 1.35123e+06
+pred total[713] = 1.33688e+06
+pred total[714] = 1.35449e+06
+pred total[715] = 1.33839e+06
+pred total[716] = 1.35523e+06
+pred total[717] = 1.33874e+06
+pred total[718] = 1.35541e+06
+pred total[719] = 1.33882e+06
+pred total[720] = 1.35544e+06
+pred total[721] = 1.33883e+06
+pred total[722] = 1.35544e+06
+pred total[723] = 1.33883e+06
+pred total[724] = 1.35544e+06
+pred total[725] = 1.33883e+06
+pred total[726] = 1.35544e+06
+pred total[727] = 1.33883e+06
+pred total[728] = 1.35544e+06
+pred total[729] = 1.33883e+06
+pred total[730] = 1.35544e+06
+pred total[731] = 1.33883e+06
+pred total[732] = 1.35544e+06
+pred total[733] = 1.33883e+06
+pred total[734] = 1.35544e+06
+pred total[735] = 1.33883e+06
+pred total[736] = 1.35544e+06
+pred total[737] = 1.33883e+06
+pred total[738] = 1.35544e+06
+pred total[739] = 1.33883e+06
+pred total[740] = 1.35544e+06
+pred total[741] = 1.33883e+06
+pred total[742] = 1.35544e+06
+pred total[743] = 1.33883e+06
+pred total[744] = 1.35544e+06
+pred total[745] = 1.33881e+06
+pred total[746] = 1.35538e+06
+pred total[747] = 1.33868e+06
+pred total[748] = 1.35512e+06
+pred total[749] = 1.33812e+06
+pred total[750] = 1.35401e+06
+pred total[751] = 1.33574e+06
+pred total[752] = 1.34913e+06
+pred total[753] = 1.32498e+06
+pred total[754] = 1.32639e+06
+pred total[755] = 1.31976e+06
+pred total[908] = 1.32505e+06
+pred total[909] = 1.35393e+06
+pred total[910] = 1.3409e+06
+pred total[911] = 1.33412e+06
+pred total[912] = 1.35521e+06
+pred total[913] = 1.34052e+06
+pred total[914] = 1.3583e+06
+pred total[915] = 1.34194e+06
+pred total[916] = 1.359e+06
+pred total[917] = 1.34228e+06
+pred total[918] = 1.35916e+06
+pred total[919] = 1.34235e+06
+pred total[920] = 1.35919e+06
+pred total[921] = 1.34235e+06
+pred total[922] = 1.35919e+06
+pred total[923] = 1.34235e+06
+pred total[924] = 1.35919e+06
+pred total[925] = 1.34235e+06
+pred total[926] = 1.35919e+06
+pred total[927] = 1.34235e+06
+pred total[928] = 1.35919e+06
+pred total[929] = 1.34235e+06
+pred total[930] = 1.35919e+06
+pred total[931] = 1.34235e+06
+pred total[932] = 1.35919e+06
+pred total[933] = 1.34235e+06
+pred total[934] = 1.35919e+06
+pred total[935] = 1.34235e+06
+pred total[936] = 1.35919e+06
+pred total[937] = 1.34235e+06
+pred total[938] = 1.35919e+06
+pred total[939] = 1.34235e+06
+pred total[940] = 1.35919e+06
+pred total[941] = 1.34235e+06
+pred total[942] = 1.35919e+06
+pred total[943] = 1.34235e+06
+pred total[944] = 1.35919e+06
+pred total[945] = 1.34233e+06
+pred total[946] = 1.35914e+06
+pred total[947] = 1.34221e+06
+pred total[948] = 1.3589e+06
+pred total[949] = 1.3417e+06
+pred total[950] = 1.35785e+06
+pred total[951] = 1.33944e+06
+pred total[952] = 1.3532e+06
+pred total[953] = 1.32912e+06
+pred total[954] = 1.33122e+06
+pred total[955] = 1.33258e+06
+pred total[1108] = 1.32972e+06
+pred total[1109] = 1.35887e+06
+pred total[1110] = 1.33676e+06
+pred total[1111] = 1.32921e+06
+pred total[1112] = 1.35026e+06
+pred total[1113] = 1.33521e+06
+pred total[1114] = 1.35315e+06
+pred total[1115] = 1.33654e+06
+pred total[1116] = 1.35381e+06
+pred total[1117] = 1.33685e+06
+pred total[1118] = 1.35396e+06
+pred total[1119] = 1.33692e+06
+pred total[1120] = 1.35398e+06
+pred total[1121] = 1.33692e+06
+pred total[1122] = 1.35398e+06
+pred total[1123] = 1.33692e+06
+pred total[1124] = 1.35398e+06
+pred total[1125] = 1.33692e+06
+pred total[1126] = 1.35398e+06
+pred total[1127] = 1.33692e+06
+pred total[1128] = 1.35398e+06
+pred total[1129] = 1.33692e+06
+pred total[1130] = 1.35398e+06
+pred total[1131] = 1.33692e+06
+pred total[1132] = 1.35398e+06
+pred total[1133] = 1.33692e+06
+pred total[1134] = 1.35398e+06
+pred total[1135] = 1.33692e+06
+pred total[1136] = 1.35398e+06
+pred total[1137] = 1.33692e+06
+pred total[1138] = 1.35398e+06
+pred total[1139] = 1.33692e+06
+pred total[1140] = 1.35398e+06
+pred total[1141] = 1.33692e+06
+pred total[1142] = 1.35398e+06
+pred total[1143] = 1.33692e+06
+pred total[1144] = 1.35398e+06
+pred total[1145] = 1.3369e+06
+pred total[1146] = 1.35393e+06
+pred total[1147] = 1.33679e+06
+pred total[1148] = 1.35371e+06
+pred total[1149] = 1.33631e+06
+pred total[1150] = 1.35274e+06
+pred total[1151] = 1.33421e+06
+pred total[1152] = 1.34838e+06
+pred total[1153] = 1.32449e+06
+pred total[1154] = 1.32756e+06
+pred total[1155] = 1.33713e+06
+pred total[1308] = 1.32045e+06
+pred total[1309] = 1.34778e+06
+pred total[1310] = 1.31771e+06
+pred total[1311] = 1.30925e+06
+pred total[1312] = 1.33016e+06
+pred total[1313] = 1.31477e+06
+pred total[1314] = 1.33282e+06
+pred total[1315] = 1.31599e+06
+pred total[1316] = 1.33342e+06
+pred total[1317] = 1.31626e+06
+pred total[1318] = 1.33356e+06
+pred total[1319] = 1.31632e+06
+pred total[1320] = 1.33358e+06
+pred total[1321] = 1.31632e+06
+pred total[1322] = 1.33358e+06
+pred total[1323] = 1.31632e+06
+pred total[1324] = 1.33358e+06
+pred total[1325] = 1.31633e+06
+pred total[1326] = 1.33358e+06
+pred total[1327] = 1.31632e+06
+pred total[1328] = 1.33358e+Info in <TCanvas::Print>: pdf file ./plots_hybrid/validation_truth_vs_pred.pdf has been created
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/validation_truth_pred_occupancy.pdf has been created
+06
+pred total[1329] = 1.31632e+06
+pred total[1330] = 1.33358e+06
+pred total[1331] = 1.31632e+06
+pred total[1332] = 1.33358e+06
+pred total[1333] = 1.31632e+06
+pred total[1334] = 1.33358e+06
+pred total[1335] = 1.31633e+06
+pred total[1336] = 1.33358e+06
+pred total[1337] = 1.31632e+06
+pred total[1338] = 1.33358e+06
+pred total[1339] = 1.31633e+06
+pred total[1340] = 1.33358e+06
+pred total[1341] = 1.31632e+06
+pred total[1342] = 1.33358e+06
+pred total[1343] = 1.31632e+06
+pred total[1344] = 1.33358e+06
+pred total[1345] = 1.31631e+06
+pred total[1346] = 1.33354e+06
+pred total[1347] = 1.31622e+06
+pred total[1348] = 1.33334e+06
+pred total[1349] = 1.31578e+06
+pred total[1350] = 1.33245e+06
+pred total[1351] = 1.31385e+06
+pred total[1352] = 1.32845e+06
+pred total[1353] = 1.3049e+06
+pred total[1354] = 1.30921e+06
+pred total[1355] = 1.32669e+06
+pred total[1509] = 1.30577e+06
+N truth totals in band = 0
+N pred totals in band  = 299
+N truth totals in band = 0
+N pred totals in band  = 299
+
+=== sources with truth total > 1.8e6 ===
+1 source + 1 opdet - Validation total = 53298000
+combinations with distance <= 1000 cm: 13553166
+combinations with distance <= 1500 cm: 22378899
+combinations with distance <= 2000 cm: 29370568
+
+validation_bias_all.pdf
+bin 1 x=50 entries=3.36533e+09 bias=0.010311 rms=0.0824994
+bin 2 x=150 entries=2.47173e+09 bias=-0.00567364 rms=0.0828425
+bin 3 x=250 entries=1.81995e+09 bias=0.000274293 rms=0.0780387
+bin 4 x=350 entries=1.96822e+09 bias=-0.0106099 rms=0.078982
+bin 5 x=450 entries=1.05533e+09 bias=0.00987739 rms=0.0999295
+bin 6 x=550 entries=5.0644e+08 bias=0.0197198 rms=0.125751
+bin 7 x=700 entries=3.72413e+08 bias=0.00925122 rms=0.164449
+bin 8 x=900 entries=9.5561e+07 bias=-0.0487186 rms=0.256334
+bin 9 x=1100 entries=2.35596e+07 bias=-0.103379 rms=0.481063
+bin 10 x=1300 entries=5.59381e+06 bias=-0.343198 rms=0.44779
+bin 11 x=1550 entries=1.61925e+06 bias=-0.841146 rms=0.326425
+bin 12 x=1850 entries=225353 bias=-1 rms=0
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/validation_bias_all.pdf has been created
+
+validation_bias_borderDistlt600.pdf
+bin 1 x=50 entries=3.34632e+09 bias=0.0108837 rms=0.0820762
+bin 2 x=150 entries=2.46243e+09 bias=-0.00523614 rms=0.0824774
+bin 3 x=250 entries=1.81431e+09 bias=0.000544241 rms=0.0778379
+bin 4 x=350 entries=1.96245e+09 bias=-0.0104237 rms=0.0788793
+bin 5 x=450 entries=1.05268e+09 bias=0.0100765 rms=0.0998489
+bin 6 x=550 entries=5.05113e+08 bias=0.0199925 rms=0.125659
+bin 7 x=700 entries=3.71375e+08 bias=0.00958655 rms=0.164372
+bin 8 x=900 entries=9.52513e+07 bias=-0.0482678 rms=0.256329
+bin 9 x=1100 entries=2.3463e+07 bias=-0.102661 rms=0.481347
+bin 10 x=1300 entries=5.56757e+06 bias=-0.342505 rms=0.447976
+bin 11 x=1550 entries=1.61246e+06 bias=-0.840997 rms=0.326578
+bin 12 x=1850 entries=224344 bias=-1 rms=0
+Info in <TCanvas::Print>: pdf file ./plots_hybrid/validation_bias_borderDistlt600.pdf has been created
