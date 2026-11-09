@@ -81,6 +81,11 @@ static const double z_radial_high_max = 5800.0;
 static const double z_radial_low_center = 300.0;
 static const double z_radial_high_center = 5500.0;
 
+static const double CORNER_Z_DEPTH = 150.0;
+static const double Y_EDGE_MIN = 525.0;
+static const double LOW_X_MAX = 75.0;
+static const double HIGH_X_MIN = 275.0;
+
 static const double opdet_x_target = 0.0;
 static const double opdet_x_window = 1.0;
 static const double z_min_keep = 0.0;
@@ -95,10 +100,11 @@ static const int kMaxDevices = 6000;
 // ============================================================
 enum BorderCorrectionRegion {
   kVerticalRegion,
-  kRadialRegion
+  kRadialRegion,
+  kGlobalVerticalRegion
 };
 
-static const int kNBorderCorrectionRegions = 2;
+static const int kNBorderCorrectionRegions = 3;
 
 bool IsRadialZ(double z) {
   return ((z >= z_radial_low_min && z <= z_radial_low_max) ||
@@ -111,6 +117,7 @@ BorderCorrectionRegion GetBorderCorrectionRegion(double z) {
 
 const char* BorderCorrectionRegionLabel(BorderCorrectionRegion region) {
   if (region == kRadialRegion) return "radial_z_edges";
+  if (region == kGlobalVerticalRegion) return "vertical_all_z";
   return "vertical_z300_5500";
 }
 
@@ -166,6 +173,7 @@ struct PairData {
   std::vector<double> v_rec_hits;
   std::vector<double> v_offset_angle;
   std::vector<double> v_d_center;
+  std::vector<double> v_vertical_distance;
   std::vector<double> v_x;
   std::vector<double> v_devx;
   std::vector<BorderCorrectionRegion> v_region;
@@ -290,6 +298,7 @@ PairData BuildPairData(const std::string& positions, const std::string& input_fi
       out.v_rec_hits.push_back(rec_N);
       out.v_offset_angle.push_back(theta);
       out.v_d_center.push_back(dT);
+      out.v_vertical_distance.push_back(std::abs(posSource[1] - centerY));
       out.v_region.push_back(GetBorderCorrectionRegion(posSource[2]));
     }
   }
@@ -308,7 +317,8 @@ int VUVHitsPredicted(const int &Nphotons_created,
                      const double &cosine,
                      const double &theta,
                      const double distance,
-                     const int &j) {
+                     const int &j,
+                     const bool force_vertical = false) {
 
   double solid_angle = 0.0;
   if (optical_detector_type == 1) {
@@ -329,7 +339,9 @@ int VUVHitsPredicted(const int &Nphotons_created,
 
   double hits_geo = std::exp(-distance / L_abs) * (solid_angle / (4 * pi)) * Nphotons_created;
 
-  BorderCorrectionRegion region = GetBorderCorrectionRegion(ScintPoint[2]);
+  BorderCorrectionRegion region =
+  force_vertical ? kGlobalVerticalRegion
+                 : GetBorderCorrectionRegion(ScintPoint[2]);
   const BorderCorrectionParameters& corr = g_border_correction[static_cast<int>(region)];
   if (!corr.valid ||
       corr.p1.size() <= static_cast<size_t>(j) ||
@@ -345,7 +357,10 @@ int VUVHitsPredicted(const int &Nphotons_created,
     return 0;
   }
 
-  double r_distance = BorderCorrectionDistance(ScintPoint[1], ScintPoint[2]);
+  double r_distance =
+  force_vertical
+    ? std::abs(ScintPoint[1] - centerY)
+    : BorderCorrectionDistance(ScintPoint[1], ScintPoint[2]);
 
   double pars[4] = {corr.p1.at(j), corr.p2.at(j), corr.p3.at(j), corr.p4.at(j)};
   pars[0] += corr.slopes1.at(j) * r_distance;
@@ -369,6 +384,7 @@ void RunValidation(const std::string& inputfilename, const std::string& position
 
   std::vector<double> v_hits_sim;
   std::vector<double> v_hits_geo;
+  std::vector<double> v_hits_geo_vertical_all_z;
   std::vector<double> v_r;
   std::vector<double> v_prop_dist;
   std::vector<double> v_pair_source_X;
@@ -475,11 +491,16 @@ void RunValidation(const std::string& inputfilename, const std::string& position
       if (j >= N) j = N - 1;
 
       double nPhotons_solid = VUVHitsPredicted(genPhotons, ScintPoint, OpDetPoint, OpDetType, cosine, theta, distance, j);
+      double nPhotons_solid_vertical_all_z = VUVHitsPredicted(
+        genPhotons, ScintPoint, OpDetPoint, OpDetType,
+        cosine, theta, distance, j, true
+      );
       total_pe_prediction += nPhotons_solid;
       total_pe_truth += VUV_hits[detID];
 
       v_hits_sim.push_back(VUV_hits[detID]);
       v_hits_geo.push_back(nPhotons_solid);
+      v_hits_geo_vertical_all_z.push_back(nPhotons_solid_vertical_all_z);
       v_r.push_back(R);
       v_prop_dist.push_back(distance);
       v_pair_source_X.push_back(X);
@@ -911,13 +932,38 @@ void RunValidation(const std::string& inputfilename, const std::string& position
 };
   const int n_bins = sizeof(edges)/sizeof(edges[0]) - 1;
   const double DT_CUTOFF = 600.0;
-  const double CORNER_Z_DEPTH = 150.0;
-  const double Y_EDGE_MIN = 525.0;
-  const double LOW_X_MAX = 75.0;
-  const double HIGH_X_MIN = 275.0;
 
   TProfile* profile = new TProfile("profile_validation", "", n_bins, edges, "s");
   TProfile* profile_core = new TProfile("profile_validation_core", "", n_bins, edges, "s");
+
+  TProfile* profile_hybrid_low_z =
+    new TProfile(
+      "profile_hybrid_low_z",
+      "",
+      n_bins, edges, "s"
+    );
+
+  TProfile* profile_hybrid_middle_z =
+    new TProfile(
+      "profile_hybrid_middle_z",
+      "",
+      n_bins, edges, "s"
+    );
+
+  TProfile* profile_hybrid_high_z =
+    new TProfile(
+      "profile_hybrid_high_z",
+      "",
+      n_bins, edges, "s"
+    );
+
+  TProfile* profile_vertical_all_z_full =
+    new TProfile(
+      "profile_vertical_all_z_full",
+      "",
+      n_bins, edges, "s"
+    );
+
   TProfile* profile_corner_all_x =
     new TProfile("profile_corner_all_x", "", n_bins, edges, "s");
 
@@ -925,6 +971,27 @@ void RunValidation(const std::string& inputfilename, const std::string& position
     new TProfile("profile_corner_low_x", "", n_bins, edges, "s");
   TProfile* profile_corner_high_x =
     new TProfile("profile_corner_high_x", "", n_bins, edges, "s");
+
+  TProfile* profile_vertical_all_z_corner_all_x =
+    new TProfile(
+      "profile_vertical_all_z_corner_all_x",
+      "",
+      n_bins, edges, "s"
+    );
+
+  TProfile* profile_vertical_all_z_corner_low_x =
+    new TProfile(
+      "profile_vertical_all_z_corner_low_x",
+      "",
+      n_bins, edges, "s"
+    );
+
+  TProfile* profile_vertical_all_z_corner_high_x =
+    new TProfile(
+      "profile_vertical_all_z_corner_high_x",
+      "",
+      n_bins, edges, "s"
+    );
 
   std::cout << "1 source + 1 opdet - Validation total = " << v_prop_dist.size() << std::endl;
 
@@ -951,6 +1018,41 @@ void RunValidation(const std::string& inputfilename, const std::string& position
     double weight = v_hits_sim[i];
     profile->Fill(v_prop_dist[i], discrepancy, weight);
     if (v_r[i] <= DT_CUTOFF) profile_core->Fill(v_prop_dist[i], discrepancy, weight);
+
+    double discrepancy_vertical_all_z =
+      (v_hits_geo_vertical_all_z[i] - v_hits_sim[i]) /
+      v_hits_sim[i];
+
+    profile_vertical_all_z_full->Fill(
+      v_prop_dist[i],
+      discrepancy_vertical_all_z,
+      weight
+    );
+
+    double source_z = v_pair_source_Z[i];
+
+    if (source_z >= z_radial_low_min &&
+        source_z <= z_radial_low_max) {
+
+      profile_hybrid_low_z->Fill(
+        v_prop_dist[i], discrepancy, weight
+      );
+
+    } else if (source_z > z_radial_low_max &&
+              source_z < z_radial_high_min) {
+
+      profile_hybrid_middle_z->Fill(
+        v_prop_dist[i], discrepancy, weight
+      );
+
+    } else if (source_z >= z_radial_high_min &&
+              source_z <= z_radial_high_max) {
+
+      profile_hybrid_high_z->Fill(
+        v_prop_dist[i], discrepancy, weight
+      );
+    }
+
     bool in_z_corner =
       (v_pair_source_Z[i] <= z_radial_low_min + CORNER_Z_DEPTH) ||
       (v_pair_source_Z[i] >= z_radial_high_max - CORNER_Z_DEPTH);
@@ -959,16 +1061,37 @@ void RunValidation(const std::string& inputfilename, const std::string& position
     bool in_y_edge = (abs_y >= Y_EDGE_MIN && abs_y <= 600.0);
 
     if (in_z_corner && in_y_edge) {
-      profile_corner_all_x->Fill(v_prop_dist[i], discrepancy, weight);
+
+      profile_corner_all_x->Fill(
+        v_prop_dist[i], discrepancy, weight
+      );
+
+      profile_vertical_all_z_corner_all_x->Fill(
+        v_prop_dist[i], discrepancy_vertical_all_z, weight
+      );
 
       if (v_pair_source_X[i] >= 0.0 &&
           v_pair_source_X[i] <= LOW_X_MAX) {
-        profile_corner_low_x->Fill(v_prop_dist[i], discrepancy, weight);
+
+        profile_corner_low_x->Fill(
+          v_prop_dist[i], discrepancy, weight
+        );
+
+        profile_vertical_all_z_corner_low_x->Fill(
+          v_prop_dist[i], discrepancy_vertical_all_z, weight
+        );
       }
 
       if (v_pair_source_X[i] >= HIGH_X_MIN &&
           v_pair_source_X[i] <= 350.0) {
-        profile_corner_high_x->Fill(v_prop_dist[i], discrepancy, weight);
+
+        profile_corner_high_x->Fill(
+          v_prop_dist[i], discrepancy, weight
+        );
+
+        profile_vertical_all_z_corner_high_x->Fill(
+          v_prop_dist[i], discrepancy_vertical_all_z, weight
+        );
       }
     }
   }
@@ -1153,6 +1276,31 @@ void RunValidation(const std::string& inputfilename, const std::string& position
 
   MakeBiasPlot(profile, "validation_bias_all.pdf", "DUNE FD-HD validation: all selected pairs");
   MakeBiasPlot(profile_core, "validation_bias_borderDistlt600.pdf", "DUNE FD-HD validation: border distance < 600 cm");
+
+  MakeBiasPlot(
+    profile_hybrid_low_z,
+    "validation_bias_hybrid_lowZ_0_300.pdf",
+    "Hybrid validation: low-Z radial region, Z = 0-300 cm"
+  );
+
+  MakeBiasPlot(
+    profile_hybrid_middle_z,
+    "validation_bias_hybrid_middleZ_300_5500.pdf",
+    "Hybrid validation: vertical middle region, Z = 300-5500 cm"
+  );
+
+  MakeBiasPlot(
+    profile_hybrid_high_z,
+    "validation_bias_hybrid_highZ_5500_5800.pdf",
+    "Hybrid validation: high-Z radial region, Z = 5500-5800 cm"
+  );
+
+  MakeBiasPlot(
+    profile_vertical_all_z_full,
+    "validation_bias_verticalAllZ_fullDetector.pdf",
+    "Global vertical-only validation: full detector"
+  );
+
   MakeBiasPlot(
     profile_corner_all_x,
     "validation_bias_radial_corners_allX.pdf",
@@ -1169,6 +1317,23 @@ void RunValidation(const std::string& inputfilename, const std::string& position
     profile_corner_high_x,
     "validation_bias_radial_corners_highX_275_350.pdf",
     "Radial corners: |Y| = 525-600 cm, both Z ends, X = 275-350 cm"
+  );
+  MakeBiasPlot(
+    profile_vertical_all_z_corner_all_x,
+    "validation_bias_verticalAllZ_corners_allX.pdf",
+    "Global vertical-only fit: |Y| = 525-600 cm, both Z ends, all X"
+  );
+
+  MakeBiasPlot(
+    profile_vertical_all_z_corner_low_x,
+    "validation_bias_verticalAllZ_corners_lowX_0_75.pdf",
+    "Global vertical-only fit: |Y| = 525-600 cm, both Z ends, X = 0-75 cm"
+  );
+
+  MakeBiasPlot(
+    profile_vertical_all_z_corner_high_x,
+    "validation_bias_verticalAllZ_corners_highX_275_350.pdf",
+    "Global vertical-only fit: |Y| = 525-600 cm, both Z ends, X = 275-350 cm"
   );
 
   delete f;
@@ -1578,7 +1743,8 @@ int main(int argc, char* argv[]) {
 
   const BorderCorrectionRegion fit_regions[kNBorderCorrectionRegions] = {
     kRadialRegion,
-    kVerticalRegion
+    kVerticalRegion,
+    kGlobalVerticalRegion
   };
   
   const std::string base_save_dir = save_dir;
@@ -1636,13 +1802,19 @@ int main(int argc, char* argv[]) {
   }
 
   for (size_t i = 0; i < pairs.v_distance.size(); ++i) {
-    if (pairs.v_region.at(i) != fit_region) continue;
+    if (fit_region != kGlobalVerticalRegion &&
+        pairs.v_region.at(i) != fit_region) {
+      continue;
+    }
 
     double costheta = std::cos(pi * pairs.v_offset_angle.at(i) / 180.0);
     int j = int(pairs.v_offset_angle.at(i) / delta_angulo);
     if (j < 0 || j >= N) continue;
 
-    double temp = pairs.v_d_center.at(i);
+    double temp =
+      (fit_region == kGlobalVerticalRegion)
+        ? pairs.v_vertical_distance.at(i)
+        : pairs.v_d_center.at(i);
     int k = std::lower_bound(range_d_array, range_d_array + M + 1, temp) - range_d_array - 1;
     if (k < 0 || k >= M) continue;
     if (pairs.v_rec_hits.at(i) <= 0) continue;
@@ -1650,8 +1822,8 @@ int main(int argc, char* argv[]) {
 
     pdiff_d[j][k]->Fill(pairs.v_distance.at(i), pairs.v_hits.at(i)/pairs.v_rec_hits.at(i)*costheta);
     pdiff_dx[j][k]->Fill(pairs.v_distance.at(i), pairs.v_distance.at(i));
-    hd_centers[k]->Fill(pairs.v_d_center.at(i));
-    h->Fill(pairs.v_d_center.at(i));
+    hd_centers[k]->Fill(temp);
+    h->Fill(temp);
     
   }
 
