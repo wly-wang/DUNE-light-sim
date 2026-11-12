@@ -26,7 +26,8 @@ The script compares the radial and vertical-middle parameter sets at identical
 source positions and writes PDF, PNG, ROOT, CSV, and text-summary outputs under
 `plots_hybrid/stitch_scan/`. For each Z boundary it produces one
 radial/vertical relative-prediction plot and one absolute hybrid photon-count
-plot.
+plot. It also writes a diagnostic `both_models` plot that extends both the
+radial and vertical parameterizations across the full scan window.
 
 For the final result, use every unique X and Y coordinate from the validation
 sample instead of the faster representative grid:

@@ -374,10 +374,6 @@ def draw_scan(results_by_transition, output_dir, generated_photons):
         photon_frame.GetYaxis().SetTitleOffset(1.45)
         photon_frame.GetYaxis().SetMaxDigits(4)
 
-        hybrid_line = make_graph(
-            f"g_hybrid_photons_{int(transition_z)}", result["z"],
-            result["hybrid_mean"], ROOT.kGray + 2, 1,
-        )
         radial = make_graph(
             f"g_hybrid_radial_photons_{int(transition_z)}", result["z"][radial_mask],
             result["hybrid_mean"][radial_mask], ROOT.kRed + 1, 1, 20,
@@ -386,7 +382,6 @@ def draw_scan(results_by_transition, output_dir, generated_photons):
             f"g_hybrid_vertical_photons_{int(transition_z)}", result["z"][vertical_mask],
             result["hybrid_mean"][vertical_mask], ROOT.kBlue + 1, 1, 20,
         )
-        hybrid_line.Draw("L SAME")
         radial.Draw("LP SAME")
         vertical.Draw("LP SAME")
 
@@ -410,13 +405,78 @@ def draw_scan(results_by_transition, output_dir, generated_photons):
         photon_canvas.SaveAs(str(output_dir / f"{photon_stem}.pdf"))
         photon_canvas.SaveAs(str(output_dir / f"{photon_stem}.png"))
 
+        both_canvas = ROOT.TCanvas(f"c_both_models_{region_name}", "", 900, 650)
+        both_canvas.SetGrid()
+        both_canvas.SetLeftMargin(0.14)
+        both_canvas.SetRightMargin(0.04)
+        both_canvas.SetBottomMargin(0.13)
+        both_canvas.SetTopMargin(0.10)
+        both_frame = both_canvas.DrawFrame(
+            result["z"].min(), photon_min, result["z"].max(), photon_max
+        )
+        both_frame.SetTitle(
+            f"Radial and vertical predictions across the {'low-Z' if transition_z == LOW_Z_JOIN_CM else 'high-Z'} stitch"
+        )
+        both_frame.GetXaxis().SetTitle("source Z [cm]")
+        both_frame.GetYaxis().SetTitle("Number of Photons Predicted")
+        both_frame.GetYaxis().SetTitleOffset(1.45)
+        both_frame.GetYaxis().SetMaxDigits(4)
+
+        radial_selected = make_graph(
+            f"g_radial_selected_{int(transition_z)}", result["z"][radial_mask],
+            result["radial_mean"][radial_mask], ROOT.kRed + 1, 1, 20,
+        )
+        vertical_selected = make_graph(
+            f"g_vertical_selected_{int(transition_z)}", result["z"][vertical_mask],
+            result["vertical_mean"][vertical_mask], ROOT.kBlue + 1, 1, 20,
+        )
+        radial_extrapolated = make_graph(
+            f"g_radial_extrapolated_{int(transition_z)}", result["z"][vertical_mask],
+            result["radial_mean"][vertical_mask], ROOT.kRed + 1, 2,
+        )
+        vertical_extrapolated = make_graph(
+            f"g_vertical_extrapolated_{int(transition_z)}", result["z"][radial_mask],
+            result["vertical_mean"][radial_mask], ROOT.kBlue + 1, 2,
+        )
+        radial_extrapolated.Draw("L SAME")
+        vertical_extrapolated.Draw("L SAME")
+        radial_selected.Draw("LP SAME")
+        vertical_selected.Draw("LP SAME")
+
+        both_boundary = ROOT.TLine(
+            transition_z, photon_min, transition_z, photon_max
+        )
+        both_boundary.SetLineColor(ROOT.kMagenta + 1)
+        both_boundary.SetLineStyle(9)
+        both_boundary.SetLineWidth(3)
+        both_boundary.Draw()
+
+        if transition_z == LOW_Z_JOIN_CM:
+            both_legend = ROOT.TLegend(0.16, 0.70, 0.50, 0.88)
+        else:
+            both_legend = ROOT.TLegend(0.16, 0.16, 0.50, 0.34)
+        both_legend.SetBorderSize(0)
+        both_legend.SetFillStyle(0)
+        both_legend.AddEntry(radial_selected, "radial parameterization", "lp")
+        both_legend.AddEntry(vertical_selected, "vertical parameterization", "lp")
+        both_legend.AddEntry(both_boundary, "stitch boundary", "l")
+        both_legend.Draw()
+
+        both_stem = f"hybrid_stitch_{region_name}_both_models"
+        both_canvas.SaveAs(str(output_dir / f"{both_stem}.pdf"))
+        both_canvas.SaveAs(str(output_dir / f"{both_stem}.png"))
+
         root_file.cd()
         ratio_graph.Write()
         ratio_canvas.Write()
-        hybrid_line.Write()
         radial.Write()
         vertical.Write()
         photon_canvas.Write()
+        radial_selected.Write()
+        vertical_selected.Write()
+        radial_extrapolated.Write()
+        vertical_extrapolated.Write()
+        both_canvas.Write()
 
     root_file.Close()
 
