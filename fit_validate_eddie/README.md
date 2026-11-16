@@ -43,3 +43,18 @@ python3 scripts/hybrid_stitch_scan.py \
 regions using three equal X intervals over 0-350 cm and three equal |Y|
 intervals over 0-600 cm. It writes one low-Z and one high-Z hybrid photon plot
 for every region under `plots_hybrid/stitch_scan_full_grid/xy_regions/`.
+
+## Hybrid validation bias and RMS versus Z
+
+After running `bin/FastOpticalFitValidate`, use its source-level validation CSV
+to plot Bias and RMS across both stitching windows:
+
+```bash
+python3 scripts/hybrid_validation_bias_vs_z.py
+```
+
+The script uses the already-selected hybrid `total_pred` column: radial at
+`Z <= 300 cm` and `Z >= 5500 cm`, and vertical in the middle. It writes low-Z
+and high-Z plots for the full X/Y sample and each of the nine 3x3 X/|Y| regions
+under `plots_hybrid/stitch_validation_bias_vs_z/`, together with a CSV of all
+plotted numerical values.
