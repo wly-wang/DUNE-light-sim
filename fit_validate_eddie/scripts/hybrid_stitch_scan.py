@@ -19,6 +19,8 @@ ARAPUCA_WIDTH_CM = 10.0
 ARAPUCA_HEIGHT_CM = 47.75
 LOW_Z_JOIN_CM = 300.0
 HIGH_Z_JOIN_CM = 5500.0
+X_REGION_EDGES_CM = np.asarray((0.0, 350.0 / 3.0, 700.0 / 3.0, 350.0))
+Y_REGION_EDGES_CM = np.asarray((0.0, 200.0, 400.0, 600.0))
 
 
 def parse_number_list(value):
@@ -210,6 +212,9 @@ def run_scan(
     vertical_std = []
     hybrid_mean = []
     hybrid_std = []
+    radial_by_source = []
+    vertical_by_source = []
+    hybrid_by_source = []
     stitch_radial_by_source = None
     stitch_vertical_by_source = None
 
@@ -240,6 +245,9 @@ def run_scan(
         vertical_std.append(vertical.std())
         hybrid_mean.append(hybrid.mean())
         hybrid_std.append(hybrid.std())
+        radial_by_source.append(radial)
+        vertical_by_source.append(vertical)
+        hybrid_by_source.append(hybrid)
 
     return {
         "z": np.asarray(z_values),
@@ -249,6 +257,9 @@ def run_scan(
         "vertical_std": np.asarray(vertical_std),
         "hybrid_mean": np.asarray(hybrid_mean),
         "hybrid_std": np.asarray(hybrid_std),
+        "radial_by_source": np.asarray(radial_by_source),
+        "vertical_by_source": np.asarray(vertical_by_source),
+        "hybrid_by_source": np.asarray(hybrid_by_source),
         "stitch_radial_by_source": stitch_radial_by_source,
         "stitch_vertical_by_source": stitch_vertical_by_source,
     }
@@ -481,6 +492,138 @@ def draw_scan(results_by_transition, output_dir, generated_photons):
     root_file.Close()
 
 
+def region_mask(values, edges, index):
+    if index == len(edges) - 2:
+        return (values >= edges[index]) & (values <= edges[index + 1])
+    return (values >= edges[index]) & (values < edges[index + 1])
+
+
+def draw_xy_region_scans(results_by_transition, output_dir, source_x, source_y):
+    region_dir = output_dir / "xy_regions"
+    region_dir.mkdir(parents=True, exist_ok=True)
+    root_file = ROOT.TFile(str(region_dir / "xy_region_stitch_scans.root"), "RECREATE")
+    csv_path = region_dir / "xy_region_stitch_scans.csv"
+
+    with csv_path.open("w", newline="") as output:
+        writer = csv.writer(output)
+        writer.writerow([
+            "x_bin", "abs_y_bin", "x_min_cm", "x_max_cm",
+            "abs_y_min_cm", "abs_y_max_cm", "source_positions",
+            "transition_z_cm", "source_z_cm", "hybrid_mean_photons",
+            "radial_mean_photons", "vertical_mean_photons",
+        ])
+
+        for x_index in range(3):
+            x_mask = region_mask(source_x, X_REGION_EDGES_CM, x_index)
+            for y_index in range(3):
+                y_mask = region_mask(np.abs(source_y), Y_REGION_EDGES_CM, y_index)
+                source_mask = x_mask & y_mask
+                source_count = int(np.count_nonzero(source_mask))
+                if source_count == 0:
+                    continue
+
+                x_low = X_REGION_EDGES_CM[x_index]
+                x_high = X_REGION_EDGES_CM[x_index + 1]
+                y_low = Y_REGION_EDGES_CM[y_index]
+                y_high = Y_REGION_EDGES_CM[y_index + 1]
+
+                for transition_z, transition_name in (
+                    (LOW_Z_JOIN_CM, "low_z"),
+                    (HIGH_Z_JOIN_CM, "high_z"),
+                ):
+                    result = results_by_transition[transition_z]
+                    z_values = result["z"]
+                    hybrid_mean = result["hybrid_by_source"][:, source_mask].mean(axis=1)
+                    radial_mean = result["radial_by_source"][:, source_mask].mean(axis=1)
+                    vertical_mean = result["vertical_by_source"][:, source_mask].mean(axis=1)
+
+                    if transition_z == LOW_Z_JOIN_CM:
+                        radial_z_mask = z_values <= transition_z
+                    else:
+                        radial_z_mask = z_values >= transition_z
+                    vertical_z_mask = ~radial_z_mask
+
+                    y_span = max(1.0, float(np.ptp(hybrid_mean)))
+                    plot_min = max(0.0, float(hybrid_mean.min()) - 0.15 * y_span)
+                    plot_max = float(hybrid_mean.max()) + 0.15 * y_span
+
+                    tag = f"x{x_index + 1}_y{y_index + 1}_{transition_name}"
+                    canvas = ROOT.TCanvas(f"c_xy_{tag}", "", 900, 650)
+                    canvas.SetGrid()
+                    canvas.SetLeftMargin(0.14)
+                    canvas.SetRightMargin(0.04)
+                    canvas.SetBottomMargin(0.13)
+                    canvas.SetTopMargin(0.10)
+                    frame = canvas.DrawFrame(
+                        z_values.min(), plot_min, z_values.max(), plot_max
+                    )
+                    frame.SetTitle(
+                        f"{'Low-Z' if transition_z == LOW_Z_JOIN_CM else 'High-Z'} stitch: "
+                        f"X = {x_low:.0f}-{x_high:.0f} cm, |Y| = {y_low:.0f}-{y_high:.0f} cm"
+                    )
+                    frame.GetXaxis().SetTitle("source Z [cm]")
+                    frame.GetYaxis().SetTitle("Number of Photons Predicted")
+                    frame.GetYaxis().SetTitleOffset(1.45)
+                    frame.GetYaxis().SetMaxDigits(4)
+
+                    radial = make_graph(
+                        f"g_xy_radial_{tag}", z_values[radial_z_mask],
+                        hybrid_mean[radial_z_mask], ROOT.kRed + 1, 1, 20,
+                    )
+                    vertical = make_graph(
+                        f"g_xy_vertical_{tag}", z_values[vertical_z_mask],
+                        hybrid_mean[vertical_z_mask], ROOT.kBlue + 1, 1, 20,
+                    )
+                    radial.Draw("LP SAME")
+                    vertical.Draw("LP SAME")
+
+                    boundary = ROOT.TLine(
+                        transition_z, plot_min, transition_z, plot_max
+                    )
+                    boundary.SetLineColor(ROOT.kMagenta + 1)
+                    boundary.SetLineStyle(9)
+                    boundary.SetLineWidth(3)
+                    boundary.Draw()
+
+                    if transition_z == LOW_Z_JOIN_CM:
+                        legend = ROOT.TLegend(0.16, 0.70, 0.48, 0.88)
+                    else:
+                        legend = ROOT.TLegend(0.16, 0.16, 0.48, 0.34)
+                    legend.SetBorderSize(0)
+                    legend.SetFillStyle(0)
+                    legend.AddEntry(radial, "radial end-cap", "lp")
+                    legend.AddEntry(vertical, "vertical middle", "lp")
+                    legend.AddEntry(boundary, "stitch boundary", "l")
+                    legend.Draw()
+
+                    count_label = ROOT.TLatex()
+                    count_label.SetNDC()
+                    count_label.SetTextSize(0.034)
+                    count_label.DrawLatex(
+                        0.72, 0.84, f"{source_count} X/Y positions"
+                    )
+
+                    output_stem = f"hybrid_stitch_{tag}_photons"
+                    canvas.SaveAs(str(region_dir / f"{output_stem}.pdf"))
+                    canvas.SaveAs(str(region_dir / f"{output_stem}.png"))
+
+                    root_file.cd()
+                    radial.Write()
+                    vertical.Write()
+                    canvas.Write()
+
+                    for z_index, z_value in enumerate(z_values):
+                        writer.writerow([
+                            x_index + 1, y_index + 1, x_low, x_high,
+                            y_low, y_high, source_count, transition_z, z_value,
+                            hybrid_mean[z_index], radial_mean[z_index],
+                            vertical_mean[z_index],
+                        ])
+
+    root_file.Close()
+    return region_dir, csv_path
+
+
 def write_outputs(results_by_transition, output_dir, step_cm, source_x, source_y):
     csv_path = output_dir / "hybrid_stitch_scan.csv"
     with csv_path.open("w", newline="") as output:
@@ -603,6 +746,11 @@ def main():
         type=Path,
         default=base_dir / "plots_hybrid" / "source_population_debug.csv",
     )
+    parser.add_argument(
+        "--xy-region-plots",
+        action="store_true",
+        help="Write low-Z and high-Z hybrid plots for a 3x3 X/|Y| partition",
+    )
     args = parser.parse_args()
 
     parameter_text = args.parameters.read_text()
@@ -644,12 +792,21 @@ def main():
         results_by_transition, args.output_dir, args.step_cm, source_x, source_y
     )
     draw_scan(results_by_transition, args.output_dir, args.generated_photons)
+    region_dir = None
+    region_csv_path = None
+    if args.xy_region_plots:
+        region_dir, region_csv_path = draw_xy_region_scans(
+            results_by_transition, args.output_dir, source_x, source_y
+        )
 
     print(f"Selected optical detectors: {detector_x.size}")
     print(f"Source X/Y combinations averaged at each Z: {source_x.size}")
     print(f"CSV: {csv_path}")
     print(f"Per-source CSV: {source_csv_path}")
     print(f"Summary: {summary_path}")
+    if region_dir is not None:
+        print(f"3x3 X/Y region plots: {region_dir}")
+        print(f"3x3 X/Y region CSV: {region_csv_path}")
     print(summary_path.read_text())
 
 

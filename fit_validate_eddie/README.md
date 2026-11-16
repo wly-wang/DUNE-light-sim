@@ -35,5 +35,11 @@ sample instead of the faster representative grid:
 ```bash
 python3 scripts/hybrid_stitch_scan.py \
   --full-source-grid \
+  --xy-region-plots \
   --output-dir plots_hybrid/stitch_scan_full_grid
 ```
+
+`--xy-region-plots` partitions the sampled symmetry plane into nine physical
+regions using three equal X intervals over 0-350 cm and three equal |Y|
+intervals over 0-600 cm. It writes one low-Z and one high-Z hybrid photon plot
+for every region under `plots_hybrid/stitch_scan_full_grid/xy_regions/`.
