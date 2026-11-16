@@ -732,7 +732,7 @@ def main():
         default=base_dir / "plots_hybrid" / "stitch_scan",
     )
     parser.add_argument("--generated-photons", type=float, default=1.0e7)
-    parser.add_argument("--window-cm", type=float, default=100.0)
+    parser.add_argument("--window-cm", type=float, default=300.0)
     parser.add_argument("--step-cm", type=float, default=2.0)
     parser.add_argument("--source-x", default="20,100,200,300,350")
     parser.add_argument("--source-y", default="31.135,171.243,311.352,451.461,591.569")

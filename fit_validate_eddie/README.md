@@ -16,7 +16,7 @@ Notes:
 ## Dense hybrid stitching scan
 
 After producing `GH_parameters_hybrid_2set.txt`, generate fast-simulation points at
-2 cm spacing around both Z transitions with:
+2 cm spacing from 300 cm below to 300 cm above both Z transitions with:
 
 ```bash
 python3 scripts/hybrid_stitch_scan.py
