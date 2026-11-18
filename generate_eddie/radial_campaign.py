@@ -190,7 +190,10 @@ def prepare(args):
     campaign = args.campaign_dir.expanduser().resolve()
     source_fcl = args.fcl.expanduser().resolve()
     existing_grid = args.existing_grid.expanduser().resolve()
-    setup_script = args.setup_script.expanduser().resolve()
+    # Preserve /home/$USER in the generated command. On Eddie it may resolve to
+    # /exports/eddie3_homes_local, which is not one of the explicit container
+    # bind paths used by these jobs.
+    setup_script = args.setup_script.expanduser().absolute()
 
     if not source_fcl.is_file():
         raise RuntimeError(f"FHiCL file not found: {source_fcl}")
@@ -345,15 +348,22 @@ def submit(args):
         if int(job["index"]) not in already_submitted
         and not (Path(job["directory"]) / "SUCCESS").exists()
     ]
+    selected = pending
+    if args.limit is not None:
+        if args.limit <= 0:
+            raise ValueError("--limit must be a positive integer")
+        selected = pending[:args.limit]
+
     print(f"Prepared jobs: {len(manifest['jobs'])}")
     print(f"Already submitted: {len(already_submitted)}")
     print(f"Pending submission: {len(pending)}")
+    print(f"Selected for this submission: {len(selected)}")
     if not args.confirm:
         print("Dry run only. Add --confirm to submit these jobs with qsub.")
         return
 
     with submission_path.open("a") as submission_stream:
-        for job in pending:
+        for job in selected:
             job_index = int(job["index"])
             job_directory = Path(job["directory"])
             result = subprocess.run(
@@ -441,6 +451,10 @@ def build_parser():
 
     submit_parser = subparsers.add_parser("submit", help="Submit prepared jobs")
     submit_parser.add_argument("--campaign-dir", type=Path, required=True)
+    submit_parser.add_argument(
+        "--limit", type=int,
+        help="Submit at most this many pending jobs (use 1 for a pilot)",
+    )
     submit_parser.add_argument("--confirm", action="store_true")
     submit_parser.set_defaults(func=submit)
 

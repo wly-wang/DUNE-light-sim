@@ -28,11 +28,13 @@ Inspect the generated manifest and jobs. Preview submission with:
 
 ```bash
 python3 radial_campaign.py submit \
-  --campaign-dir /exports/eddie/scratch/$USER/dune-light/radial-dense-25cm-v1
+  --campaign-dir /exports/eddie/scratch/$USER/dune-light/radial-dense-25cm-v1 \
+  --limit 1
 ```
 
-Only the same command with `--confirm` calls `qsub`. Check progress and create
-a merge-ready list of successful raw ROOT files with:
+Only the same command with `--confirm` calls `qsub`. Use this one-job pilot to
+verify the setup and output, then omit `--limit` to submit every remaining job.
+Check progress and create a merge-ready list of successful raw ROOT files with:
 
 ```bash
 python3 radial_campaign.py status \
