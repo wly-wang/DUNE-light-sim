@@ -334,20 +334,29 @@ def load_manifest(campaign):
 def submit(args):
     campaign = args.campaign_dir.expanduser().resolve()
     manifest = load_manifest(campaign)
-    submission_path = campaign / "submissions.tsv"
+    submission_path = campaign / (
+        "retry_submissions.tsv" if args.retry_failed else "submissions.tsv"
+    )
     already_submitted = set()
-    if submission_path.exists():
-        with submission_path.open() as stream:
+    initial_submission_path = campaign / "submissions.tsv"
+    if initial_submission_path.exists():
+        with initial_submission_path.open() as stream:
             for line in stream:
                 fields = line.rstrip("\n").split("\t")
                 if fields:
                     already_submitted.add(int(fields[0]))
 
-    pending = [
-        job for job in manifest["jobs"]
-        if int(job["index"]) not in already_submitted
-        and not (Path(job["directory"]) / "SUCCESS").exists()
-    ]
+    if args.retry_failed:
+        pending = [
+            job for job in manifest["jobs"]
+            if (Path(job["directory"]) / "FAILED").exists()
+        ]
+    else:
+        pending = [
+            job for job in manifest["jobs"]
+            if int(job["index"]) not in already_submitted
+            and not (Path(job["directory"]) / "SUCCESS").exists()
+        ]
     selected = pending
     if args.limit is not None:
         if args.limit <= 0:
@@ -356,7 +365,10 @@ def submit(args):
 
     print(f"Prepared jobs: {len(manifest['jobs'])}")
     print(f"Already submitted: {len(already_submitted)}")
-    print(f"Pending submission: {len(pending)}")
+    if args.retry_failed:
+        print(f"Failed jobs eligible for retry: {len(pending)}")
+    else:
+        print(f"Pending submission: {len(pending)}")
     print(f"Selected for this submission: {len(selected)}")
     if not args.confirm:
         print("Dry run only. Add --confirm to submit these jobs with qsub.")
@@ -378,6 +390,8 @@ def submit(args):
                 f"{job_index}\t{utc_now()}\t{response}\n"
             )
             submission_stream.flush()
+            if args.retry_failed:
+                (job_directory / "FAILED").unlink(missing_ok=True)
             print(response)
 
 
@@ -454,6 +468,10 @@ def build_parser():
     submit_parser.add_argument(
         "--limit", type=int,
         help="Submit at most this many pending jobs (use 1 for a pilot)",
+    )
+    submit_parser.add_argument(
+        "--retry-failed", action="store_true",
+        help="Submit only jobs currently carrying a FAILED marker",
     )
     submit_parser.add_argument("--confirm", action="store_true")
     submit_parser.set_defaults(func=submit)

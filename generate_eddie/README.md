@@ -40,3 +40,14 @@ Check progress and create a merge-ready list of successful raw ROOT files with:
 python3 radial_campaign.py status \
   --campaign-dir /exports/eddie/scratch/$USER/dune-light/radial-dense-25cm-v1
 ```
+
+Infrastructure failures can be previewed and resubmitted without duplicating
+successful or running jobs:
+
+```bash
+python3 radial_campaign.py submit \
+  --campaign-dir /exports/eddie/scratch/$USER/dune-light/radial-dense-25cm-v1 \
+  --retry-failed
+```
+
+Add `--confirm` only after checking the reported retry count.
